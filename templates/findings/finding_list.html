@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Hallazgos | Sistema de gestion{% endblock %}
+
+{% block content %}
+<section class="sg-page">
+  <div class="sg-page-header">
+    <div>
+      <p class="sg-section-kicker">Hallazgos</p>
+      <h1>Bandeja de hallazgos</h1>
+      <p>Consulta, filtra y revisa el estado de los hallazgos registrados en el Sistema de Gestion.</p>
+    </div>
+    <a href="{% url 'findings:create' %}" class="sg-button-brand">Registrar hallazgo</a>
+  </div>
+
+  <form method="get" class="sg-filter-bar">
+    <div class="sg-filter-grid-wide">
+      <div class="sg-filter-field">
+        <label for="finding-search" class="sg-filter-label">Buscar</label>
+        <input
+          id="finding-search"
+          type="search"
+          name="q"
+          value="{{ query }}"
+          placeholder="Codigo, descripcion, area o responsable"
+          class="sg-filter-control"
+        >
+      </div>
+      <div class="sg-filter-field">
+        <label for="finding-status" class="sg-filter-label">Estado</label>
+        <select id="finding-status" name="status" class="sg-filter-control">
+          <option value="">Todos los estados</option>
+          <option value="abiertos" {% if selected_status == "abiertos" %}selected{% endif %}>Solo abiertos</option>
+          <option value="cerrados" {% if selected_status == "cerrados" %}selected{% endif %}>Solo cerrados</option>
+          {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="sg-filter-field">
+        <label for="finding-classification" class="sg-filter-label">Clasificacion</label>
+        <select id="finding-classification" name="classification" class="sg-filter-control">
+          <option value="">Todas las clasificaciones</option>
+          {% for value, label in classification_choices %}
+            <option value="{{ value }}" {% if selected_classification == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="sg-filter-actions">
+        <button class="sg-button-compact-primary" type="submit">Filtrar</button>
+        <button class="sg-button-compact" type="submit" formaction="{% url 'findings:export_csv' %}">Exportar CSV</button>
+        <a href="{% url 'findings:list' %}" class="sg-button-compact">Limpiar</a>
+      </div>
+    </div>
+  </form>
+
+  {% include "findings/partials/finding_table.html" with findings=findings empty_message="Aun no hay hallazgos registrados." %}
+</section>
+{% endblock %}

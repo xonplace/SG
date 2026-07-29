@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}{{ finding.code }} | Sistema de gestion{% endblock %}
+
+{% block content %}
+<section class="sg-page">
+  <div class="sg-page-header sg-finding-detail-header">
+    <div>
+      <p class="sg-section-kicker">{{ finding.code }}</p>
+      <h1>Detalle del hallazgo</h1>
+      <p>{{ finding.description }}</p>
+    </div>
+    <div class="sg-finding-action-bar">
+      <span class="sg-detail-status">{{ finding.display_status_label }}</span>
+      {% for action in actions %}
+        <a href="{{ action.url }}" class="{% if forloop.first and action.name != 'upload_evidence' %}sg-button-primary{% else %}sg-button-secondary{% endif %}">
+          {{ action.label }}
+        </a>
+      {% empty %}
+        <span class="text-sm text-neutral-500">Sin acciones pendientes para tu rol.</span>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="mb-6 sg-card sg-detail-flow sg-finding-flow-card">
+    <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+      <h2 class="sg-section-title">Flujo del hallazgo</h2>
+      <p class="text-xs text-neutral-500">Estado actual: {{ finding.display_status_label }}</p>
+    </div>
+    <ol class="flex flex-wrap gap-2">
+      {% for step in timeline %}
+        <li class="sg-flow-pill {% if step.state == 'completed' %}sg-flow-pill-done{% elif step.state == 'current' %}sg-flow-pill-current{% else %}sg-flow-pill-pending{% endif %}">
+          <span></span>
+          <span class="font-medium">{{ step.label }}</span>
+        </li>
+      {% endfor %}
+    </ol>
+  </div>
+
+  <div class="grid gap-6 lg:grid-cols-[320px_1fr]">
+    <article class="sg-card sg-finding-side-card">
+      <h2 class="sg-finding-card-title">Antecedentes</h2>
+      <dl class="sg-finding-meta-list">
+        <div><dt class="text-neutral-500">Informado por</dt><dd>{{ finding.reported_by_name }}</dd></div>
+        <div><dt class="text-neutral-500">Correo</dt><dd>{{ finding.reported_by_email }}</dd></div>
+        <div><dt class="text-neutral-500">Cargo</dt><dd>{{ finding.reported_by_position|default:"-" }}</dd></div>
+        <div><dt class="text-neutral-500">Area</dt><dd>{{ finding.area|default:"-" }}</dd></div>
+        <div><dt class="text-neutral-500">Fuente</dt><dd>{{ finding.source_label }}</dd></div>
+        <div><dt class="text-neutral-500">Proceso</dt><dd>{{ finding.process_label|default:"-" }}</dd></div>
+        <div><dt class="text-neutral-500">Clausula / documento</dt><dd>{{ finding.normative_clause|default:"-" }}</dd></div>
+        <div><dt class="text-neutral-500">Fecha deteccion</dt><dd>{{ finding.detection_date|date:"d-m-Y" }}</dd></div>
+        <div><dt class="text-neutral-500">Fecha registro</dt><dd>{{ finding.report_date|date:"d-m-Y" }}</dd></div>
+        <div><dt class="text-neutral-500">Clasificacion</dt><dd>{{ finding.get_classification_display|default:"Pendiente" }}</dd></div>
+        <div>
+          <dt class="text-neutral-500">Hallazgo similar previo</dt>
+          <dd>
+            {% if finding.similar_previous_finding_record %}
+              <a href="{% url 'findings:detail' finding.similar_previous_finding_record.pk %}" class="font-semibold text-[#2271b1] hover:underline">
+                {{ finding.similar_previous_finding_record.code }}
+              </a>
+            {% else %}
+              -
+            {% endif %}
+          </dd>
+        </div>
+        <div><dt class="text-neutral-500">Evidencia objetiva</dt><dd class="whitespace-pre-line">{{ finding.objective_evidence|default:"-" }}</dd></div>
+      </dl>
+    </article>
+
+    <div class="space-y-6">
+      {% if not finding.is_improvement_classification %}
+      <article class="sg-card sg-finding-info-card">
+        <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+          <h2 class="sg-section-title">Correccion</h2>
+          {% if finding.correction %}
+            <span class="sg-deadline-chip">{{ finding.correction.due_at|date:"d-m-Y H:i"|default:"Sin plazo" }}</span>
+          {% endif %}
+        </div>
+        {% if finding.correction %}
+          <dl class="grid gap-4 text-sm md:grid-cols-2">
+            <div><dt class="text-neutral-500">Responsable</dt><dd>{{ finding.correction.assigned_to|default:"-" }}</dd></div>
+            <div><dt class="text-neutral-500">Fecha asignacion</dt><dd>{{ finding.correction.assigned_at|date:"d-m-Y H:i"|default:"-" }}</dd></div>
+            <div class="md:col-span-2"><dt class="text-neutral-500">Accion solicitada</dt><dd class="whitespace-pre-line">{{ finding.correction.action|default:"Sin accion registrada." }}</dd></div>
+            <div class="md:col-span-2"><dt class="text-neutral-500">Resultado / accion ejecutada</dt><dd class="whitespace-pre-line">{{ finding.correction.result|default:"Pendiente de registro." }}</dd></div>
+            <div><dt class="text-neutral-500">Enviado a revision</dt><dd>{{ finding.correction.submitted_at|date:"d-m-Y H:i"|default:"-" }}</dd></div>
+            <div><dt class="text-neutral-500">Plazo revision RG</dt><dd>{{ finding.correction_review_due_at|date:"d-m-Y H:i"|default:"-" }}</dd></div>
+            <div><dt class="text-neutral-500">Revisado por</dt><dd>{{ finding.correction.reviewed_by|default:"-" }}</dd></div>
+            <div><dt class="text-neutral-500">Conforme</dt><dd>{{ finding.correction.is_conform|yesno:"Si,No,Pendiente" }}</dd></div>
+            <div><dt class="text-neutral-500">Fecha revision</dt><dd>{{ finding.correction.reviewed_at|date:"d-m-Y H:i"|default:"-" }}</dd></div>
+            <div class="md:col-span-2"><dt class="text-neutral-500">Observaciones de revision</dt><dd class="whitespace-pre-line">{{ finding.correction.review_observations|default:"-" }}</dd></div>
+          </dl>
+        {% else %}
+          <p class="text-sm text-neutral-500">Sin correccion asignada.</p>
+        {% endif %}
+      </article>
+      {% endif %}
+
+      <article class="sg-card sg-finding-info-card">
+        <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+          <h2 class="sg-section-title">
+            {% if finding.is_improvement_classification %}Plan de accion{% else %}Accion correctiva{% endif %}
+          </h2>
+          {% if finding.corrective_action %}
+            <span class="sg-deadline-chip">{{ finding.corrective_action.due_at|date:"d-m-Y H:i"|default:"Sin plazo" }}</span>
+          {% endif %}
+        </div>
+        {% if finding.corrective_action %}
+          <dl class="grid gap-4 text-sm md:grid-cols-2">
+            <div><dt class="text-neutral-500">Responsable</dt><dd>{{ finding.corrective_action.assigned_to|default:"-" }}</dd></div>
+            <div><dt class="text-neutral-500">Fecha asignacion</dt><dd>{{ finding.corrective_action.assigned_at|date:"d-m-Y H:i"|default:"-" }}</dd></div>
+            {% if finding.is_improvement_classification %}
+              <div class="md:col-span-2"><dt class="text-neutral-500">Plan de accion propuesto</dt><dd class="whitespace-pre-line">{{ finding.corrective_action.action_description|default:"Sin plan registrado." }}</dd></div>
+              <div><dt class="text-neutral-500">Medio de verificacion de la implementacion</dt><dd>{{ finding.corrective_action.verification_method|default:"-" }}</dd></div>
+              <div><dt class="text-neutral-500">Observaciones / analisis complementario</dt><dd class="whitespace-pre-line">{{ finding.corrective_action.risk_matrix_review|default:"-" }}</dd></div>
+            {% else %}
+              <div class="md:col-span-2"><dt class="text-neutral-500">Conclusion / causa raiz</dt><dd class="whitespace-pre-line">{{ finding.corrective_action.conclusion|default:"-" }}</dd></div>
+              <div class="md:col-span-2"><dt class="text-neutral-500">Plan de accion para mitigar el hallazgo</dt><dd class="whitespace-pre-line">{{ finding.corrective_action.action_description|default:"Sin accion registrada." }}</dd></div>
+              <div><dt class="text-neutral-500">Es necesario actualizar los riesgos</dt><dd>{{ finding.corrective_action.risk_matrix_review|default:"-"|title }}</dd></div>
+            {% endif %}
+            <div><dt class="text-neutral-500">Enviado a revision</dt><dd>{{ finding.corrective_action.submitted_at|date:"d-m-Y H:i"|default:"-" }}</dd></div>
+            <div><dt class="text-neutral-500">Plazo revision RG</dt><dd>{{ finding.corrective_action_review_due_at|date:"d-m-Y H:i"|default:"-" }}</dd></div>
+            <div><dt class="text-neutral-500">{% if finding.is_improvement_classification %}Plan conforme{% else %}Conforme con el plan de accion{% endif %}</dt><dd>{{ finding.corrective_action.is_conform|yesno:"Si,No,Pendiente" }}</dd></div>
+            <div class="md:col-span-2"><dt class="text-neutral-500">Observaciones de revision</dt><dd class="whitespace-pre-line">{{ finding.corrective_action.review_observations|default:"-" }}</dd></div>
+          </dl>
+        {% else %}
+          <p class="text-sm text-neutral-500">
+            {% if finding.is_improvement_classification %}Sin plan de accion asignado.{% else %}Sin accion correctiva asignada.{% endif %}
+          </p>
+        {% endif %}
+      </article>
+
+      <article class="sg-card sg-finding-info-card">
+        <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+          <h2 class="sg-section-title">Seguimiento y verificacion de eficacia</h2>
+          {% if finding.effectiveness_verification %}
+            <span class="sg-deadline-chip">{{ finding.effectiveness_verification.due_at|date:"d-m-Y H:i"|default:"Sin plazo" }}</span>
+          {% endif %}
+        </div>
+        {% if finding.effectiveness_verification %}
+          <dl class="grid gap-4 text-sm md:grid-cols-2">
+            <div><dt class="text-neutral-500">Responsable</dt><dd>{{ finding.effectiveness_verification.assigned_to|default:"-" }}</dd></div>
+            <div><dt class="text-neutral-500">Fecha asignacion</dt><dd>{{ finding.effectiveness_verification.assigned_at|date:"d-m-Y H:i"|default:"-" }}</dd></div>
+            <div><dt class="text-neutral-500">Tecnica de seguimiento</dt><dd>{{ finding.effectiveness_verification.technique|default:"-" }}</dd></div>
+            <div><dt class="text-neutral-500">% Efectividad</dt><dd>{{ finding.effectiveness_verification.effectiveness_percentage|default:"-" }}</dd></div>
+            <div class="md:col-span-2"><dt class="text-neutral-500">Criterio de medicion de eficacia</dt><dd class="whitespace-pre-line">{{ finding.effectiveness_verification.effectiveness_criteria|default:"-" }}</dd></div>
+            <div class="md:col-span-2"><dt class="text-neutral-500">Resultado de verificacion</dt><dd class="whitespace-pre-line">{{ finding.effectiveness_verification.result|default:"Pendiente de registro." }}</dd></div>
+            <div><dt class="text-neutral-500">Requiere seguimiento adicional</dt><dd>{{ finding.effectiveness_verification.requires_additional_follow_up|yesno:"Si,No" }}</dd></div>
+            <div><dt class="text-neutral-500">Eficaz</dt><dd>{{ finding.effectiveness_verification.is_effective|yesno:"Si,No,Pendiente" }}</dd></div>
+            <div><dt class="text-neutral-500">Enviado a revision</dt><dd>{{ finding.effectiveness_verification.submitted_at|date:"d-m-Y H:i"|default:"-" }}</dd></div>
+            <div><dt class="text-neutral-500">Revisado por</dt><dd>{{ finding.effectiveness_verification.reviewed_by|default:"-" }}</dd></div>
+            <div class="md:col-span-2"><dt class="text-neutral-500">Observaciones</dt><dd class="whitespace-pre-line">{{ finding.effectiveness_verification.observations|default:"-" }}</dd></div>
+          </dl>
+        {% else %}
+          <p class="text-sm text-neutral-500">Sin seguimiento asignado.</p>
+        {% endif %}
+      </article>
+    </div>
+  </div>
+
+  <div class="mt-6 sg-card sg-evidence-panel">
+    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <h2 class="sg-section-title">Evidencias</h2>
+      {% if can_upload_evidence %}
+        <a href="{% url 'findings:upload_evidence' finding.pk %}" class="sg-button-secondary">Agregar evidencia</a>
+      {% endif %}
+    </div>
+    <div class="grid gap-4 lg:grid-cols-2">
+      {% for group in evidence_groups %}
+        <section class="sg-evidence-group">
+          <div class="mb-3 flex items-start justify-between gap-3">
+            <div>
+              <h3 class="text-sm font-semibold text-neutral-950">{{ group.title }}</h3>
+              <p class="mt-1 text-xs leading-5 text-neutral-500">{{ group.description }}</p>
+            </div>
+            <span class="sg-badge sg-badge-neutral">{{ group.items|length }}</span>
+          </div>
+
+          <div class="space-y-2">
+            {% for evidence in group.items %}
+              <article class="sg-evidence-item">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div class="min-w-0">
+                    <p class="font-medium text-neutral-950">{{ evidence.description|default:evidence.file.name }}</p>
+                    <p class="mt-1 text-xs text-neutral-500">
+                      {{ evidence.created_at|date:"d-m-Y H:i" }}
+                      {% if evidence.uploaded_by %}- {{ evidence.uploaded_by }}{% endif %}
+                    </p>
+                    <p class="mt-1 break-all text-xs text-neutral-500">{{ evidence.file.name }}</p>
+                  </div>
+                  <a href="{% url 'findings:download_evidence' evidence.pk %}" class="sg-row-action">Descargar</a>
+                </div>
+              </article>
+            {% empty %}
+              <p class="rounded border border-dashed border-neutral-300 bg-white px-3 py-4 text-sm text-neutral-500">
+                Sin evidencias cargadas en esta etapa.
+              </p>
+            {% endfor %}
+          </div>
+        </section>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="mt-6 sg-card sg-history-panel">
+    <h2 class="mb-4 sg-section-title">Historial</h2>
+    <div class="space-y-3">
+      {% for item in finding.history.all %}
+        <div class="border-l border-neutral-300 pl-4 text-sm">
+          <p class="font-medium">{{ item.action }}</p>
+          <p class="text-neutral-500">{{ item.created_at|date:"d-m-Y H:i" }}</p>
+          {% if item.comment %}<p class="mt-1 text-neutral-600">{{ item.comment }}</p>{% endif %}
+        </div>
+      {% empty %}
+        <p class="text-sm text-neutral-500">Sin historial registrado.</p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

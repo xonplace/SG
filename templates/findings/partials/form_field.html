@@ -1,0 +1,23 @@
+<div class="sg-form-field {% if wide %}sg-form-field-wide{% endif %}" data-field-name="{{ field.name }}">
+  <label for="{{ field.id_for_label }}" class="sg-form-label">
+    {{ field.label }}
+    {% if field.field.required %}<span class="text-red-600">*</span>{% endif %}
+  </label>
+
+  {% if field.field.widget.input_type == "checkbox" %}
+    <div class="flex items-center gap-3 rounded border border-neutral-300 bg-white px-3 py-2">
+      {{ field }}
+      <span class="text-sm text-neutral-600">Marcar si corresponde</span>
+    </div>
+  {% else %}
+    {{ field }}
+  {% endif %}
+
+  {% if field.help_text %}
+    <p class="sg-form-help">{{ field.help_text }}</p>
+  {% endif %}
+
+  {% for error in field.errors %}
+    <p class="sg-form-error">{{ error }}</p>
+  {% endfor %}
+</div>

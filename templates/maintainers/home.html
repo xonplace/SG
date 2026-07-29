@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Mantenedores | Sistema de gestion{% endblock %}
+
+{% block content %}
+<section class="sg-page">
+  <div class="sg-page-header">
+    <div>
+      <p class="sg-section-kicker">Mantenedores</p>
+      <h1>Configuracion del sistema</h1>
+      <p>Administra la empresa, listas maestras y plazos usados en el flujo de hallazgos.</p>
+    </div>
+  </div>
+
+  <div class="sg-maintainer-grid">
+    <a href="{% url 'maintainers:company' %}" class="sg-maintainer-card">
+      <span class="sg-maintainer-icon">E</span>
+      <p class="text-sm text-neutral-500">Empresa</p>
+      <p class="mt-3 text-xl font-semibold">{{ company_profile.company_name }}</p>
+      <p class="mt-2 text-xs text-neutral-500">{{ company_profile.iso_standard }}</p>
+    </a>
+    <a href="{% url 'maintainers:company_logo' %}" class="sg-maintainer-card">
+      <span class="sg-maintainer-icon">L</span>
+      <p class="text-sm text-neutral-500">Logo</p>
+      <p class="mt-3 text-xl font-semibold">Marca visual</p>
+      <p class="mt-2 text-xs text-neutral-500">Portada, login y encabezado</p>
+    </a>
+    <a href="{% url 'maintainers:theme' %}" class="sg-maintainer-card">
+      <span class="sg-maintainer-icon">T</span>
+      <p class="text-sm text-neutral-500">Tema visual</p>
+      <p class="mt-3 text-xl font-semibold">Colores</p>
+      <p class="mt-2 text-xs text-neutral-500">Paleta base del sitio</p>
+    </a>
+    <a href="{% url 'maintainers:system_texts' %}" class="sg-maintainer-card">
+      <span class="sg-maintainer-icon">X</span>
+      <p class="text-sm text-neutral-500">Textos</p>
+      <p class="mt-3 text-xl font-semibold">Textos del sistema</p>
+      <p class="mt-2 text-xs text-neutral-500">Titulos, botones y menus</p>
+    </a>
+    <a href="{% url 'maintainers:modules' %}" class="sg-maintainer-card">
+      <span class="sg-maintainer-icon">M</span>
+      <p class="text-sm text-neutral-500">Modulos</p>
+      <p class="mt-3 text-xl font-semibold">Activacion</p>
+      <p class="mt-2 text-xs text-neutral-500">Habilitar funciones por empresa</p>
+    </a>
+    <a href="{% url 'maintainers:permission_matrix' %}" class="sg-maintainer-card">
+      <span class="sg-maintainer-icon">R</span>
+      <p class="text-sm text-neutral-500">Roles</p>
+      <p class="mt-3 text-xl font-semibold">Matriz de permisos</p>
+      <p class="mt-2 text-xs text-neutral-500">Consulta de privilegios</p>
+    </a>
+    <a href="{% url 'maintainers:help_contents' %}" class="sg-maintainer-card">
+      <span class="sg-maintainer-icon">H</span>
+      <p class="text-sm text-neutral-500">Ayuda</p>
+      <p class="mt-3 text-xl font-semibold">Capacitacion</p>
+      <p class="mt-2 text-xs text-neutral-500">Videos e instrucciones</p>
+    </a>
+    <a href="{% url 'maintainers:audit_log' %}" class="sg-maintainer-card">
+      <span class="sg-maintainer-icon">A</span>
+      <p class="text-sm text-neutral-500">Auditoria</p>
+      <p class="mt-3 text-xl font-semibold">Registro de cambios</p>
+      <p class="mt-2 text-xs text-neutral-500">Trazabilidad del sistema</p>
+    </a>
+    <a href="{% url 'maintainers:list' 'areas' %}" class="sg-maintainer-card">
+      <span class="sg-maintainer-icon">A</span>
+      <p class="text-sm text-neutral-500">Areas</p>
+      <p class="mt-3 text-3xl font-extrabold">{{ area_count }}</p>
+    </a>
+    <a href="{% url 'maintainers:list' 'procesos' %}" class="sg-maintainer-card">
+      <span class="sg-maintainer-icon">P</span>
+      <p class="text-sm text-neutral-500">Procesos</p>
+      <p class="mt-3 text-3xl font-extrabold">{{ process_count }}</p>
+    </a>
+    <a href="{% url 'maintainers:list' 'fuentes' %}" class="sg-maintainer-card">
+      <span class="sg-maintainer-icon">F</span>
+      <p class="text-sm text-neutral-500">Fuentes</p>
+      <p class="mt-3 text-3xl font-extrabold">{{ source_count }}</p>
+    </a>
+    <a href="{% url 'maintainers:deadlines' %}" class="sg-maintainer-card">
+      <span class="sg-maintainer-icon">D</span>
+      <p class="text-sm text-neutral-500">Plazos</p>
+      <p class="mt-3 text-3xl font-extrabold">{{ deadlines.validation_days }}</p>
+    </a>
+    <a href="{% url 'maintainers:sgc_identity' %}" class="sg-maintainer-card">
+      <span class="sg-maintainer-icon">I</span>
+      <p class="text-sm text-neutral-500">Identidad SGC</p>
+      <p class="mt-3 text-xl font-semibold">Nuestro compromiso</p>
+      <p class="mt-2 text-xs text-neutral-500">Politica, mision y vision</p>
+    </a>
+  </div>
+</section>
+{% endblock %}

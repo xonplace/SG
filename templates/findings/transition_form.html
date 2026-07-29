@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} | {{ finding.code }}{% endblock %}
+
+{% block content %}
+<section class="sg-form-page">
+  <div class="w-full">
+    <div class="sg-form-intro">
+      <p class="sg-section-kicker">{{ finding.code }}</p>
+      <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">{{ title }}</h1>
+      <p class="mt-3 text-sm leading-6 text-slate-600">{{ finding.description|truncatechars:140 }}</p>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="sg-form-panel sg-form-panel-elevated">
+      {% csrf_token %}
+      {% if deadline_label %}
+        <div class="mb-5 rounded-xl border border-[#b9d1f2] bg-[#eef5ff] px-4 py-3 text-sm text-slate-800">
+          <p class="font-medium">{{ deadline_label }}</p>
+          {% if remaining_label %}<p class="mt-1 text-neutral-600">{{ remaining_label }}</p>{% endif %}
+        </div>
+      {% endif %}
+      <div class="sg-form-grid">
+        {% for field in form %}
+          <div class="sg-form-field {% if field.field.widget.input_type != 'checkbox' and field.field.widget.input_type != 'number' and field.field.widget.input_type != 'select' %}{% if field.field.widget.attrs.rows %}sg-form-field-wide{% endif %}{% endif %}{% if field.name == 'question_1' or field.name == 'question_2' or field.name == 'question_3' or field.name == 'question_4' or field.name == 'question_5' %} sg-form-field-wide{% endif %}" data-field-name="{{ field.name }}">
+            <label for="{{ field.id_for_label }}" class="sg-form-label">
+              {{ field.label }}
+              {% if field.field.required %}<span class="text-red-600">*</span>{% endif %}
+            </label>
+            {% if field.field.widget.input_type == "checkbox" %}
+              <div class="flex items-center gap-3">
+                {{ field }}
+                <span class="text-sm text-neutral-600">Marcar si corresponde</span>
+              </div>
+            {% else %}
+              {{ field }}
+            {% endif %}
+            {% if field.help_text %}
+              <p class="sg-form-help">{{ field.help_text }}</p>
+            {% endif %}
+            {% for error in field.errors %}
+              <p class="sg-form-error">{{ error }}</p>
+            {% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+      <div class="sg-form-actions">
+        <a href="{% url 'findings:upload_evidence' finding.pk %}?phase={{ evidence_phase }}" class="sg-button-secondary">Agregar evidencia</a>
+        <a href="{% url 'findings:detail' finding.pk %}" class="sg-button-secondary">Cancelar</a>
+        <button type="submit" class="sg-button-primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<script>
+  function toggleField(fieldName, show) {
+    const field = document.querySelector(`[data-field-name="${fieldName}"]`);
+    if (field) field.classList.toggle("hidden", !show);
+  }
+
+  function updateConditionalFields() {
+    const appliesTreatment = document.querySelector("#id_applies_treatment");
+    const similarPrevious = document.querySelector("#id_similar_previous_finding");
+    const additionalFollowUp = document.querySelector("#id_requires_additional_follow_up");
+    const analysisTechnique = document.querySelector("#id_analysis_technique");
+
+    if (appliesTreatment) {
+      const applies = appliesTreatment.value === "True" || appliesTreatment.value === "true" || appliesTreatment.value === "1";
+      const doesNotApply = appliesTreatment.value === "False" || appliesTreatment.value === "false" || appliesTreatment.value === "0";
+      toggleField("no_apply_reason", doesNotApply);
+      toggleField("classification", applies);
+      toggleField("normative_clause", applies);
+      toggleField("similar_previous_finding", applies);
+      toggleField("similar_previous_finding_record", applies && similarPrevious && similarPrevious.checked);
+    }
+    if (similarPrevious && !appliesTreatment) {
+      toggleField("similar_previous_finding_record", similarPrevious.checked);
+    }
+    if (additionalFollowUp) {
+      const enabled = additionalFollowUp.checked;
+      toggleField("additional_follow_up_assigned_to", enabled);
+      toggleField("additional_follow_up_days", enabled);
+    }
+    if (analysisTechnique) {
+      const useFiveWhys = analysisTechnique.value === "5_por_que";
+      const fiveWhyFields = [
+        "question_1",
+        "answer_1",
+        "question_2",
+        "answer_2",
+        "question_3",
+        "answer_3",
+        "question_4",
+        "answer_4",
+        "question_5",
+        "answer_5",
+      ];
+      fiveWhyFields.forEach((fieldName) => toggleField(fieldName, useFiveWhys));
+      toggleField("analysis_technique_other", !useFiveWhys);
+    }
+  }
+
+  document.addEventListener("change", updateConditionalFields);
+  document.addEventListener("DOMContentLoaded", updateConditionalFields);
+</script>
+{% endblock %}

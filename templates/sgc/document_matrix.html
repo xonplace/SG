@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Matriz documental - Listado Maestro de Documentos | SGC{% endblock %}
+
+{% block content %}
+<section class="sg-page">
+  <div class="sg-page-header">
+    <div>
+      <p class="sg-section-kicker">Control documental</p>
+      <h1>Matriz documental - Listado Maestro de Documentos</h1>
+      <p>Lista maestra para revisar documentos vigentes, obsoletos y su trazabilidad basica.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a href="{% url 'sgc:document_matrix_export' %}?{{ request.GET.urlencode }}" class="sg-button-secondary">Exportar CSV</a>
+      <a href="{% url 'sgc:document_control_dashboard' %}" class="sg-button-brand">Control documental</a>
+    </div>
+  </div>
+
+  <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <article class="sg-card border-l-4 border-l-blue-500 p-4">
+      <p class="text-xs font-bold uppercase tracking-[0.08em] text-slate-500">Documentos filtrados</p>
+      <p class="mt-2 text-3xl font-black text-slate-950">{{ total_documents }}</p>
+    </article>
+    <article class="sg-card border-l-4 border-l-emerald-500 p-4">
+      <p class="text-xs font-bold uppercase tracking-[0.08em] text-slate-500">Controlados internos</p>
+      <p class="mt-2 text-3xl font-black text-emerald-700">{{ controlled_count }}</p>
+    </article>
+    <article class="sg-card border-l-4 border-l-violet-500 p-4">
+      <p class="text-xs font-bold uppercase tracking-[0.08em] text-slate-500">Externos / apoyo</p>
+      <p class="mt-2 text-3xl font-black text-violet-700">{{ external_count }}</p>
+    </article>
+    <article class="sg-card border-l-4 border-l-amber-400 p-4">
+      <p class="text-xs font-bold uppercase tracking-[0.08em] text-slate-500">Obsoletos en filtro</p>
+      <p class="mt-2 text-3xl font-black text-amber-700">{{ obsolete_count }}</p>
+    </article>
+  </section>
+
+  <form method="get" class="sg-filter-bar mt-5">
+    <div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_210px_170px_auto] lg:items-end">
+      <div class="sg-filter-field">
+        <label class="sg-filter-label" for="q">Buscar</label>
+        <input id="q" type="search" name="q" value="{{ query }}" class="sg-filter-control" placeholder="Documento, codigo, version o archivo">
+      </div>
+      <div class="sg-filter-field">
+        <label class="sg-filter-label" for="clause">Clausula</label>
+        <select id="clause" name="clause" class="sg-filter-control">
+          <option value="">Todas</option>
+          {% for value, label in clauses %}
+            <option value="{{ value }}" {% if selected_clause == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="sg-filter-field">
+        <label class="sg-filter-label" for="type">Tipo</label>
+        <select id="type" name="type" class="sg-filter-control">
+          <option value="">Todos</option>
+          {% for value, label in types %}
+            <option value="{{ value }}" {% if selected_type == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="sg-filter-field">
+        <label class="sg-filter-label" for="status">Estado</label>
+        <select id="status" name="status" class="sg-filter-control">
+          <option value="">Todos</option>
+          {% for value, label in statuses %}
+            <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="sg-filter-actions">
+        <button class="sg-button-compact-primary" type="submit">Filtrar</button>
+        <a href="{% url 'sgc:document_matrix' %}" class="sg-button-compact">Limpiar</a>
+      </div>
+    </div>
+  </form>
+
+  {% if selected_clause_label or selected_type_label or selected_status_label or query %}
+    <div class="sg-active-filter">
+      <span class="font-semibold text-neutral-950">Filtro activo:</span>
+      {% if selected_status_label %}{{ selected_status_label }}{% endif %}
+      {% if selected_clause_label %}{% if selected_status_label %} - {% endif %}{{ selected_clause_label }}{% endif %}
+      {% if selected_type_label %}{% if selected_status_label or selected_clause_label %} - {% endif %}{{ selected_type_label }}{% endif %}
+      {% if query %}{% if selected_status_label or selected_clause_label or selected_type_label %} - {% endif %}"{{ query }}"{% endif %}
+    </div>
+  {% endif %}
+
+  <div class="sg-table-wrap">
+    <table class="sg-table">
+      <colgroup>
+        <col class="w-[32%]">
+        <col class="w-[13%]">
+        <col class="w-[15%]">
+        <col class="w-[7%]">
+        <col class="w-[8%]">
+        <col class="w-[9%]">
+        <col class="w-[8%]">
+        <col class="w-[8%]">
+      </colgroup>
+      <thead class="bg-neutral-50">
+        <tr>
+          <th>Documento</th>
+          <th>Tipo</th>
+          <th>Clausula</th>
+          <th>Version</th>
+          <th>Vigencia</th>
+          <th>Estado</th>
+          <th>Archivo</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for document in documents %}
+          <tr class="sg-table-row">
+            <td>
+              <p class="font-semibold text-slate-950">{{ document.title }}</p>
+              <p class="mt-1 text-xs text-slate-500">{{ document.code|default:"Sin codigo" }}</p>
+              {% if document.status == "obsoleto" and document.obsolete_reason %}
+                <p class="mt-2 rounded border border-amber-200 bg-amber-50 px-2 py-1 text-xs leading-5 text-amber-900">{{ document.obsolete_reason }}</p>
+              {% endif %}
+            </td>
+            <td>{{ document.document_type_label }}</td>
+            <td>{{ document.get_clause_display|cut:"Clausula " }}</td>
+            <td>{{ document.version|default:"-" }}</td>
+            <td>{{ document.effective_date|date:"d-m-Y"|default:"-" }}</td>
+            <td>
+              <span class="sg-badge {% if document.status == 'publicado' %}sg-badge-progress{% elif document.status == 'obsoleto' %}sg-badge-attention{% else %}sg-badge-muted{% endif %}">
+                {{ document.get_status_display }}
+              </span>
+            </td>
+            <td>
+              <span class="sg-format-badge {{ document.format_badge_class }}" title="{{ document.file_filename }}">
+                <span class="sg-format-icon">{{ document.format_icon }}</span>
+                {{ document.format_label }}
+              </span>
+            </td>
+            <td class="sg-document-actions-cell">
+              <div class="sg-document-actions">
+                <a href="{% url 'sgc:view_document' document.pk %}" target="_blank" rel="noopener" class="sg-document-action sg-document-action-primary" title="Ver documento">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="3"/></svg>
+                  Ver
+                </a>
+                <a href="{% url 'sgc:download_document' document.pk %}" class="sg-document-action" title="Descargar documento">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+                  Descargar
+                </a>
+                <a href="{% url 'sgc:document_history' document.pk %}" class="sg-document-action" title="Historial documental">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 2"/></svg>
+                  Historial
+                </a>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="8" class="px-4 py-10 text-center text-neutral-500">
+              No hay documentos para los filtros seleccionados.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

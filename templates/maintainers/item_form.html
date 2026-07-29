@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} | Mantenedores{% endblock %}
+
+{% block content %}
+<section class="sg-form-page">
+  <div class="sg-form-panel sg-form-panel-elevated">
+    <div class="sg-form-header-block">
+      <p class="sg-section-kicker">Mantenedores</p>
+      <h1>{{ title }}</h1>
+    </div>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="sg-form-grid">
+        {% for field in form %}
+          <div class="sg-form-field {% if field.name == 'name' %}sg-form-field-wide{% endif %}">
+            {% if field.field.widget.input_type == "checkbox" %}
+              <label class="flex items-center gap-2 text-sm font-medium text-neutral-900">
+                {{ field }}
+                {{ field.label }}
+              </label>
+            {% else %}
+              <label for="{{ field.id_for_label }}" class="sg-form-label">{{ field.label }}</label>
+              {{ field }}
+            {% endif %}
+            {% for error in field.errors %}
+              <p class="sg-form-error">{{ error }}</p>
+            {% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="sg-form-actions">
+        <a href="{% url 'maintainers:list' kind %}" class="sg-button-secondary">Cancelar</a>
+        <button type="submit" class="sg-button-primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Logo | Mantenedores{% endblock %}
+
+{% block content %}
+<section class="sg-form-page">
+  <div class="sg-form-panel sg-form-panel-elevated">
+    <div class="mb-6">
+      <p class="sg-section-kicker">Mantenedores</p>
+      <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">Logo del sitio</h1>
+      <p class="mt-2 text-sm leading-6 text-slate-600">
+        Administra la marca visual de la empresa. Estos logos se usan en la portada, login y encabezado interno del sistema.
+      </p>
+    </div>
+
+    <div class="mb-6 grid gap-4 md:grid-cols-2">
+      <div class="rounded-2xl border border-[#d7dee8] bg-[#fbfdff] p-4">
+        <p class="sg-section-kicker">Logo principal actual</p>
+        <div class="mt-4 flex min-h-24 items-center justify-center rounded-xl border border-dashed border-[#c8d5e8] bg-white p-4">
+          {% if profile.logo %}
+            <img src="{{ profile.logo.url }}" alt="{{ profile.company_name }}" class="max-h-20 max-w-full object-contain">
+          {% else %}
+            <span class="sg-brand-wordmark">{{ profile.company_name }}</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="rounded-2xl border border-[#d7dee8] bg-[#fbfdff] p-4">
+        <p class="sg-section-kicker">Logo encabezado actual</p>
+        <div class="mt-4 flex min-h-24 items-center justify-center rounded-xl border border-dashed border-[#c8d5e8] bg-white p-4">
+          {% if profile.header_logo %}
+            <img src="{{ profile.header_logo.url }}" alt="{{ profile.company_name }}" class="max-h-20 max-w-full object-contain">
+          {% elif profile.logo %}
+            <img src="{{ profile.logo.url }}" alt="{{ profile.company_name }}" class="max-h-20 max-w-full object-contain">
+          {% else %}
+            <span class="sg-brand-wordmark">{{ profile.company_name }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+      <div class="sg-form-grid">
+        {% for field in form %}
+          <div class="sg-form-field sg-form-field-wide">
+            <label for="{{ field.id_for_label }}" class="sg-form-label">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}
+              <p class="sg-form-help">{{ field.help_text }}</p>
+            {% endif %}
+            {% for error in field.errors %}
+              <p class="sg-form-error">{{ error }}</p>
+            {% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="sg-form-actions">
+        <a href="{% url 'maintainers:home' %}" class="sg-button-secondary">Cancelar</a>
+        <button type="submit" class="sg-button-primary">Guardar logo</button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

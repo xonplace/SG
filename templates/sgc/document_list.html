@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_obsolete_view %}Documentos obsoletos{% else %}Biblioteca documental{% endif %} | SGC{% endblock %}
+
+{% block content %}
+<section class="sg-page">
+  <div class="sg-page-header">
+    <div>
+      <p class="sg-section-kicker">Sistema de Gestion</p>
+      <h1>{% if is_obsolete_view %}Documentos obsoletos{% else %}Biblioteca documental{% endif %}</h1>
+      <p>
+        {% if is_obsolete_view %}
+          Documentos dados de baja. Se conservan por trazabilidad y no deben utilizarse como documentos vigentes.
+        {% else %}
+          Documentos vigentes del SGC organizados por clausulas del Anexo SL.
+        {% endif %}
+      </p>
+    </div>
+    {% if not is_obsolete_view %}
+      {% if can_manage_documents %}
+        <a href="{% url 'sgc:document_create' %}" class="sg-button-brand">Cargar documento</a>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  <form method="get" class="sg-filter-bar">
+    <div class="sg-filter-grid-wide">
+      <div class="sg-filter-field">
+        <label class="sg-filter-label" for="q">Buscar</label>
+        <input id="q" type="search" name="q" value="{{ query }}" class="sg-filter-control" placeholder="Titulo del documento">
+      </div>
+      <div class="sg-filter-field">
+        <label class="sg-filter-label" for="clause">Clausula</label>
+        <select id="clause" name="clause" class="sg-filter-control">
+          <option value="">Todas las clausulas</option>
+          {% for value, label in clauses %}
+            <option value="{{ value }}" {% if selected_clause == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="sg-filter-field">
+        <label class="sg-filter-label" for="type">Tipo</label>
+        <select id="type" name="type" class="sg-filter-control">
+          <option value="">Todos los tipos</option>
+          {% for value, label in types %}
+            <option value="{{ value }}" {% if selected_type == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="sg-filter-actions">
+        <button class="sg-button-compact-primary" type="submit">Filtrar</button>
+        {% if is_obsolete_view %}
+          <a href="{% url 'sgc:obsolete_documents' %}" class="sg-button-compact">Limpiar</a>
+        {% else %}
+          <a href="{% url 'sgc:documents' %}" class="sg-button-compact">Limpiar</a>
+        {% endif %}
+      </div>
+    </div>
+  </form>
+
+  {% if is_obsolete_view %}
+    <div class="sg-document-warning">
+      <span class="font-semibold">Control documental:</span>
+      estos documentos estan obsoletos y no deben ser usados. La eliminacion definitiva debe ser excepcional.
+    </div>
+  {% endif %}
+
+  {% if selected_clause_label or selected_type or query %}
+    <div class="sg-active-filter">
+      <span class="font-semibold text-neutral-950">Filtro activo:</span>
+      {% if selected_clause_label %}{{ selected_clause_label }}{% endif %}
+      {% if selected_type_label %}{% if selected_clause_label %} - {% endif %}{{ selected_type_label }}{% endif %}
+      {% if query %}{% if selected_clause_label or selected_type_label %} - {% endif %}"{{ query }}"{% endif %}
+    </div>
+  {% endif %}
+
+  <div class="sg-table-wrap">
+    <table class="sg-table">
+      <thead class="bg-neutral-50">
+        <tr>
+          <th>Documento</th>
+          <th>Clausula</th>
+          <th>Formato</th>
+          <th>Version</th>
+          <th>Vigencia</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for document in documents %}
+          <tr class="sg-table-row">
+            <td>
+              <p class="font-semibold">{{ document.title }}</p>
+              {% if document.code %}<p class="mt-1 text-xs text-neutral-500">{{ document.code }}</p>{% endif %}
+              {% if is_obsolete_view and document.obsolete_reason %}
+                <p class="mt-2 rounded border border-amber-200 bg-amber-50 px-2 py-1 text-xs leading-5 text-amber-900">
+                  {{ document.obsolete_reason }}
+                </p>
+              {% endif %}
+            </td>
+            <td>{{ document.get_clause_display }}</td>
+            <td>
+              <span class="sg-format-badge {{ document.format_badge_class }}" title="{{ document.document_type_label }}">
+                <span class="sg-format-icon">{{ document.format_icon }}</span>
+                {{ document.format_label }}
+              </span>
+            </td>
+            <td>{{ document.version|default:"-" }}</td>
+            <td>{{ document.effective_date|date:"d-m-Y"|default:"-" }}</td>
+            <td class="sg-document-actions-cell">
+              <div class="sg-document-actions">
+                <a href="{% url 'sgc:view_document' document.pk %}" target="_blank" rel="noopener" class="sg-document-action sg-document-action-primary" title="Ver documento">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="3"/></svg>
+                  Ver
+                </a>
+                <a href="{% url 'sgc:download_document' document.pk %}" class="sg-document-action" title="Descargar documento">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+                  Descargar
+                </a>
+                <a href="{% url 'sgc:document_history' document.pk %}" class="sg-document-action" title="Ver historial de versiones">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 2"/></svg>
+                  Historial
+                </a>
+                {% if can_manage_documents and not is_obsolete_view %}
+                  <a href="{% url 'sgc:document_new_version' document.pk %}" class="sg-document-action sg-document-action-accent" title="Cargar nueva version">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                    Version
+                  </a>
+                  <form method="post" action="{% url 'sgc:document_mark_obsolete' document.pk %}" onsubmit="const reason = prompt('Motivo de baja del documento:', 'Baja manual desde biblioteca documental.'); if (reason === null) return false; this.querySelector('[name=obsolete_reason]').value = reason; return confirm('Este documento saldra de la biblioteca vigente y pasara a Documentos obsoletos. ¿Continuar?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="obsolete_reason" value="">
+                    <button type="submit" class="sg-document-action sg-document-action-danger" title="Dar de baja documento">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M6 7l1 14h10l1-14"/><path d="M9 7V4h6v3"/></svg>
+                      Baja
+                    </button>
+                  </form>
+                {% endif %}
+                {% if can_manage_documents and is_obsolete_view %}
+                  <form method="post" action="{% url 'sgc:document_restore' document.pk %}" onsubmit="return confirm('Se restaurara este documento como vigente si no existe otra version publicada. ¿Continuar?');">
+                    {% csrf_token %}
+                    <button type="submit" class="sg-document-action sg-document-action-accent" title="Restaurar documento">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+                      Restaurar
+                    </button>
+                  </form>
+                  <a href="{% url 'sgc:document_delete' document.pk %}" class="sg-document-action sg-document-action-danger" title="Eliminar definitivamente">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M6 7l1 14h10l1-14"/><path d="M9 7V4h6v3"/></svg>
+                    Eliminar
+                  </a>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" class="px-4 py-10 text-center text-neutral-500">
+              {% if is_obsolete_view %}No hay documentos obsoletos.{% else %}No hay documentos publicados.{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

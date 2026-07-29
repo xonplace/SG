@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Eliminar formulario | SGC{% endblock %}
+
+{% block content %}
+<section class="sg-form-page">
+  <div class="sg-form-panel">
+    <div class="mb-6">
+      <p class="sg-danger-kicker">Eliminar formulario</p>
+      <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">{{ form_item.name }}</h1>
+      <p class="mt-2 text-sm leading-6 text-slate-600">
+        Esta accion eliminara el registro del formulario y su archivo adjunto.
+      </p>
+    </div>
+
+    <div class="sg-danger-panel">
+      <span class="font-semibold">Confirmacion requerida:</span>
+      esta accion no se puede deshacer desde el sitio.
+    </div>
+
+    <dl class="mb-6 grid gap-3 md:grid-cols-3">
+      <div class="sg-confirm-meta">
+        <dt class="text-sm text-neutral-500">Codigo</dt>
+        <dd class="mt-1 font-semibold text-neutral-950">{{ form_item.code|default:"-" }}</dd>
+      </div>
+      <div class="sg-confirm-meta">
+        <dt class="text-sm text-neutral-500">Version</dt>
+        <dd class="mt-1 font-semibold text-neutral-950">{{ form_item.version }}</dd>
+      </div>
+      <div class="sg-confirm-meta">
+        <dt class="text-sm text-neutral-500">Archivo</dt>
+        <dd class="mt-1 break-all font-semibold text-neutral-950">{{ form_item.file_filename }}</dd>
+      </div>
+    </dl>
+
+    <form method="post" class="sg-form-actions">
+      {% csrf_token %}
+      <a href="{% url 'sgc:official_forms' %}" class="sg-button-secondary">Cancelar</a>
+      <button type="submit" class="sg-button-danger">Eliminar formulario</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

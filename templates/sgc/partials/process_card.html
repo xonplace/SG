@@ -1,0 +1,27 @@
+<article
+  class="sg-process-card {% if card_tone == 'apoyo' %}sg-process-card-support{% else %}sg-process-card-operational{% endif %}"
+>
+  <div class="sg-process-card-bar"></div>
+
+  <div class="sg-process-card-body">
+    <div class="flex items-start justify-between gap-3">
+      <div class="min-w-0">
+        <p class="sg-process-card-kicker">{{ process.get_category_display }}</p>
+        <h3>{{ process.name }}</h3>
+        <p class="mt-2 text-xs font-medium uppercase tracking-wide text-neutral-500">{{ process.code }}</p>
+      </div>
+      {% if process.is_active %}
+        <span class="sg-process-card-status">Activo</span>
+      {% else %}
+        <span class="sg-process-card-status sg-process-card-status-obsolete">Obsoleto</span>
+      {% endif %}
+    </div>
+
+    <div class="mt-5 flex flex-wrap items-center gap-3 text-xs font-semibold">
+      <a href="{% url 'sgc:process_detail' process.pk %}" class="sg-process-card-link">Abrir detalle</a>
+      {% if is_obsolete_view %}
+        <a href="{% url 'sgc:process_delete' process.pk %}" class="text-red-700">Eliminar</a>
+      {% endif %}
+    </div>
+  </div>
+</article>

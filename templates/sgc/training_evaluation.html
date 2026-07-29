@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Evaluacion | {{ content.title }}{% endblock %}
+
+{% block content %}
+<section class="sg-page">
+  <div class="mx-auto max-w-4xl">
+    <div class="sg-page-header">
+      <div>
+        <p class="sg-section-kicker">Evaluacion de capacitacion</p>
+        <h1>{{ content.title }}</h1>
+        <p>Responde todas las preguntas. Para aprobar, debes obtener al menos {{ content.passing_percentage }}%.</p>
+      </div>
+      <a href="{% url 'sgc:training_detail' content.pk %}" class="sg-row-action">Volver al curso</a>
+    </div>
+
+    {% if last_attempt and not result_attempt %}
+      <div class="mb-5 rounded-2xl border {% if last_attempt.passed %}border-emerald-200 bg-emerald-50 text-emerald-900{% else %}border-amber-200 bg-amber-50 text-amber-900{% endif %} p-4 text-sm font-semibold">
+        Ultimo intento: {{ last_attempt.score }}/{{ last_attempt.total_questions }} - {{ last_attempt.percentage }}%
+      </div>
+    {% endif %}
+
+    {% if not result_attempt %}
+      <section class="sg-card p-6 md:p-10">
+        <div class="mb-6 border-b border-slate-100 pb-5">
+          <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p class="sg-section-kicker">Comprobacion de aprendizaje</p>
+              <h2 class="mt-2 text-2xl font-black tracking-tight text-slate-950">Rendir evaluacion</h2>
+              <p class="mt-2 text-sm leading-6 text-slate-600">Marca una alternativa por pregunta y envia tus respuestas para calcular el resultado.</p>
+            </div>
+            <div class="rounded-2xl border border-blue-200 bg-blue-50 px-5 py-3 text-right">
+              <span class="block text-[11px] font-black uppercase tracking-[0.22em] text-blue-700">Tiempo restante</span>
+              <strong id="training-timer" class="mt-1 block text-2xl font-black text-slate-950">--:--</strong>
+            </div>
+          </div>
+        </div>
+
+        <form id="training-evaluation-form" method="post" class="space-y-4">
+          {% csrf_token %}
+          {% for field in evaluation_form %}
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <label class="block text-base font-black text-slate-950">{{ field.label }}</label>
+              <div class="mt-4 grid gap-2 text-sm font-semibold text-slate-700">
+                {{ field }}
+              </div>
+              {% if field.errors %}<p class="mt-2 text-xs font-semibold text-red-600">{{ field.errors|join:", " }}</p>{% endif %}
+            </div>
+          {% endfor %}
+          <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <a href="{% url 'sgc:training_detail' content.pk %}" class="sg-row-action">Cancelar</a>
+            <button type="submit" class="sg-button-brand">Enviar evaluacion</button>
+          </div>
+        </form>
+      </section>
+      <script>
+        (() => {
+          const timer = document.getElementById("training-timer");
+          const form = document.getElementById("training-evaluation-form");
+          let remaining = Number("{{ time_limit_seconds|default:300 }}");
+          const paint = () => {
+            const minutes = String(Math.floor(remaining / 60)).padStart(2, "0");
+            const seconds = String(remaining % 60).padStart(2, "0");
+            if (timer) timer.textContent = `${minutes}:${seconds}`;
+            if (remaining <= 60 && timer) timer.classList.add("text-red-700");
+          };
+          paint();
+          const interval = setInterval(() => {
+            remaining -= 1;
+            paint();
+            if (remaining <= 0) {
+              clearInterval(interval);
+              if (form) form.requestSubmit();
+            }
+          }, 1000);
+        })();
+      </script>
+    {% endif %}
+  </div>
+</section>
+
+{% if result_attempt %}
+  <dialog id="training-result-dialog" class="sg-result-dialog">
+    <div class="sg-result-dialog-shell {% if result_attempt.passed %}sg-result-approved{% else %}sg-result-failed{% endif %}">
+      <div class="sg-result-icon">
+        {% if result_attempt.passed %}
+          <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+        {% else %}
+          <svg viewBox="0 0 24 24"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+        {% endif %}
+      </div>
+      <p class="sg-section-kicker">Resultado de evaluacion</p>
+      <h2>{% if result_attempt.passed %}Evaluacion aprobada{% else %}Evaluacion no aprobada{% endif %}</h2>
+      <p class="sg-result-summary">
+        Obtuviste <strong>{{ result_attempt.score }}/{{ result_attempt.total_questions }}</strong> respuestas correctas,
+        equivalente a <strong>{{ result_attempt.percentage }}%</strong>. La aprobacion requerida es {{ content.passing_percentage }}%.
+      </p>
+      {% if result_attempt.passed %}
+        <p class="sg-result-note">Capacitacion completada correctamente. Ya puedes descargar tu certificado desde el curso.</p>
+      {% else %}
+        <p class="sg-result-note">Puedes volver al curso para revisar el contenido o reintentar la evaluacion.</p>
+      {% endif %}
+      <div class="sg-result-actions">
+        <a href="{% url 'sgc:training_detail' content.pk %}" class="sg-button-brand-compact">Aceptar</a>
+        {% if not result_attempt.passed %}
+          <a href="{% url 'sgc:training_evaluation' content.pk %}" class="sg-row-action">Reintentar evaluacion</a>
+        {% endif %}
+      </div>
+    </div>
+  </dialog>
+  <script>
+    (() => {
+      const dialog = document.getElementById("training-result-dialog");
+      if (!dialog) return;
+      if (typeof dialog.showModal === "function") {
+        dialog.showModal();
+      } else {
+        dialog.setAttribute("open", "open");
+      }
+    })();
+  </script>
+{% endif %}
+{% endblock %}

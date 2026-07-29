@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} | Evaluacion{% endblock %}
+
+{% block content %}
+<section class="sg-form-page">
+  <div class="sg-form-panel sg-form-panel-elevated">
+    <div class="mb-6">
+      <p class="sg-section-kicker">Evaluacion de capacitacion</p>
+      <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">{{ title }}</h1>
+      <p class="mt-2 text-sm leading-6 text-slate-600">{{ content.title }}</p>
+    </div>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="sg-form-grid">
+        {% include "findings/partials/form_field.html" with field=form.question wide=True %}
+        {% include "findings/partials/form_field.html" with field=form.option_a %}
+        {% include "findings/partials/form_field.html" with field=form.option_b %}
+        {% include "findings/partials/form_field.html" with field=form.option_c %}
+        {% include "findings/partials/form_field.html" with field=form.option_d %}
+        {% include "findings/partials/form_field.html" with field=form.correct_option %}
+        {% include "findings/partials/form_field.html" with field=form.order %}
+        {% include "findings/partials/form_field.html" with field=form.is_active %}
+      </div>
+
+      <div class="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm leading-6 text-blue-950">
+        <strong class="block">Regla de aprobacion</strong>
+        El usuario debe responder correctamente todas las preguntas activas para aprobar la capacitacion.
+      </div>
+
+      <div class="sg-form-actions">
+        <a href="{% url 'sgc:training_questions' content.pk %}" class="sg-button-secondary">Cancelar</a>
+        <button type="submit" class="sg-button-primary">{{ submit_label }}</button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

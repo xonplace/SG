@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Certificado ISO | SGC{% endblock %}
+
+{% block content %}
+<section class="sg-page">
+  <div class="sg-page-header">
+    <div>
+      <p class="sg-section-kicker">Sistema de Gestion</p>
+      <h1>Certificado ISO</h1>
+      <p>Consulta el certificado vigente y su historial.</p>
+    </div>
+    {% if can_manage_sgc_certificates %}
+      <a href="{% url 'sgc:certificate_create' %}" class="sg-button-brand">Cargar certificado</a>
+    {% endif %}
+  </div>
+
+  {% if active_certificate %}
+    <section class="sg-certificate-card sg-certificate-card-v2">
+      <div class="sg-certificate-layout">
+        <div class="sg-certificate-info">
+          <p class="sg-section-kicker">Certificado vigente</p>
+          <h2 class="mt-2 text-2xl font-extrabold text-slate-950">{{ active_certificate.title }}</h2>
+          <p class="mt-2 text-sm text-neutral-600">{{ active_certificate.standard }} - {{ active_certificate.certification_body }}</p>
+          <p class="mt-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">{{ active_certificate.source_label }}</p>
+          <p class="mt-4 whitespace-pre-line text-sm text-neutral-700">{{ active_certificate.scope|default:"Sin alcance registrado." }}</p>
+          <div class="sg-cert-date sg-cert-date-balanced">
+            <p>Vencimiento</p>
+            <strong>{{ active_certificate.expiry_date|date:"d-m-Y"|default:"-" }}</strong>
+          </div>
+          <div class="mt-5 flex flex-wrap gap-2">
+            <a href="{{ active_certificate.preview_url }}" target="_blank" rel="noopener" class="sg-button-brand">Abrir certificado</a>
+            <a href="{{ active_certificate.download_url }}" class="sg-button-compact">Descargar certificado</a>
+          </div>
+        </div>
+        <div class="flex justify-center">
+          <div class="sg-cert-preview">
+            <iframe src="{{ active_certificate.preview_url }}" title="{{ active_certificate.title }}" class="w-full" loading="lazy"></iframe>
+          </div>
+        </div>
+      </div>
+    </section>
+  {% endif %}
+
+  <div class="sg-table-wrap">
+    <table class="sg-table">
+      <thead class="bg-neutral-50">
+        <tr>
+          <th>Certificado</th>
+          <th>Norma</th>
+          <th>Organismo</th>
+          <th>Vencimiento</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for certificate in certificates %}
+          <tr class="sg-table-row">
+            <td class="font-semibold">{{ certificate.title }}</td>
+            <td>{{ certificate.standard }}</td>
+            <td>{{ certificate.certification_body|default:"-" }}</td>
+            <td>{{ certificate.expiry_date|date:"d-m-Y"|default:"-" }}</td>
+            <td>
+              {% if certificate.is_active %}
+                <span class="sg-badge sg-badge-progress">Vigente</span>
+              {% else %}
+                <span class="sg-badge sg-badge-neutral">Historico</span>
+              {% endif %}
+            </td>
+            <td class="text-right"><a href="{% url 'sgc:download_certificate' certificate.pk %}" class="sg-row-action">Descargar</a></td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" class="px-4 py-10 text-center text-neutral-500">No hay certificados cargados.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

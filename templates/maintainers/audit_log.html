@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Auditoria del sistema | Mantenedores{% endblock %}
+
+{% block content %}
+<section class="sg-page">
+  <div class="sg-page-header">
+    <div>
+      <p class="sg-section-kicker">Mantenedores</p>
+      <h1>Auditoria del sistema</h1>
+      <p>Trazabilidad de cambios relevantes realizados en configuraciones, mantenedores y contenidos administrables.</p>
+    </div>
+  </div>
+
+  <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <article class="sg-card border-l-4 border-l-blue-500 p-4">
+      <p class="text-xs font-bold uppercase tracking-[0.08em] text-slate-500">Registros filtrados</p>
+      <p class="mt-2 text-3xl font-black text-slate-950">{{ total_logs }}</p>
+    </article>
+    <article class="sg-card border-l-4 border-l-emerald-500 p-4">
+      <p class="text-xs font-bold uppercase tracking-[0.08em] text-slate-500">Modulos auditados</p>
+      <p class="mt-2 text-3xl font-black text-emerald-700">{{ modules|length }}</p>
+    </article>
+    <article class="sg-card border-l-4 border-l-violet-500 p-4">
+      <p class="text-xs font-bold uppercase tracking-[0.08em] text-slate-500">Acciones distintas</p>
+      <p class="mt-2 text-3xl font-black text-violet-700">{{ actions|length }}</p>
+    </article>
+    <article class="sg-card border-l-4 border-l-amber-400 p-4">
+      <p class="text-xs font-bold uppercase tracking-[0.08em] text-slate-500">Usuarios con actividad</p>
+      <p class="mt-2 text-3xl font-black text-amber-700">{{ users|length }}</p>
+    </article>
+  </section>
+
+  <form method="get" class="sg-filter-bar mt-5">
+    <div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_180px_180px_auto] lg:items-end">
+      <div class="sg-filter-field">
+        <label class="sg-filter-label" for="q">Buscar</label>
+        <input id="q" type="search" name="q" value="{{ query }}" class="sg-filter-control" placeholder="Accion, modulo, objeto, detalle o usuario">
+      </div>
+      <div class="sg-filter-field">
+        <label class="sg-filter-label" for="module">Modulo</label>
+        <select id="module" name="module" class="sg-filter-control">
+          <option value="">Todos</option>
+          {% for module in modules %}
+            <option value="{{ module }}" {% if selected_module == module %}selected{% endif %}>{{ module }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="sg-filter-field">
+        <label class="sg-filter-label" for="action">Accion</label>
+        <select id="action" name="action" class="sg-filter-control">
+          <option value="">Todas</option>
+          {% for action in actions %}
+            <option value="{{ action }}" {% if selected_action == action %}selected{% endif %}>{{ action }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="sg-filter-field">
+        <label class="sg-filter-label" for="user">Usuario</label>
+        <select id="user" name="user" class="sg-filter-control">
+          <option value="">Todos</option>
+          {% for username in users %}
+            <option value="{{ username }}" {% if selected_user == username %}selected{% endif %}>{{ username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="sg-filter-actions">
+        <button class="sg-button-compact-primary" type="submit">Filtrar</button>
+        <a href="{% url 'maintainers:audit_log' %}" class="sg-button-compact">Limpiar</a>
+      </div>
+    </div>
+  </form>
+
+  <div class="sg-table-wrap mt-5">
+    <table class="sg-table">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Usuario</th>
+          <th>Modulo</th>
+          <th>Accion</th>
+          <th>Detalle</th>
+          <th>IP</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+          <tr class="sg-table-row">
+            <td class="whitespace-nowrap">{{ log.created_at|date:"d-m-Y H:i" }}</td>
+            <td>{{ log.user.get_username|default:"Sistema" }}</td>
+            <td><span class="sg-badge sg-badge-muted">{{ log.module }}</span></td>
+            <td class="font-semibold text-slate-950">{{ log.action }}</td>
+            <td>
+              <span class="block">{{ log.object_repr|default:"-" }}</span>
+              {% if log.details %}
+                <small class="text-slate-500">{{ log.details }}</small>
+              {% endif %}
+            </td>
+            <td class="text-xs text-slate-500">{{ log.ip_address|default:"-" }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" class="px-4 py-10 text-center text-slate-500">No hay registros para los filtros seleccionados.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

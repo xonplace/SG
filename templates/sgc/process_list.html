@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_obsolete_view %}Procesos obsoletos{% else %}Procesos{% endif %} | SGC{% endblock %}
+
+{% block content %}
+<section class="sg-page">
+  <div class="sg-page-header">
+    <div>
+      <p class="sg-section-kicker">Sistema de Gestion</p>
+      <h1>{% if is_obsolete_view %}Procesos obsoletos{% else %}Procesos{% endif %}</h1>
+      <p>
+        {% if is_obsolete_view %}
+          Procesos dados de baja. Se conservan como trazabilidad y no deben utilizarse como procesos vigentes.
+        {% else %}
+          Consulta rapida de procesos operacionales y de apoyo publicados en el SGC.
+        {% endif %}
+      </p>
+    </div>
+    {% if can_manage_processes and not is_obsolete_view %}
+      <a href="{% url 'sgc:process_create' %}" class="sg-button-brand">Publicar proceso</a>
+    {% endif %}
+  </div>
+
+  <section class="sg-process-overview">
+    <div class="sg-process-overview-card sg-process-overview-total">
+      <span>Procesos publicados</span>
+      <strong>{{ total_processes }}</strong>
+      <small>{% if is_obsolete_view %}Dados de baja{% else %}Disponibles para consulta{% endif %}</small>
+    </div>
+    <div class="sg-process-overview-card sg-process-overview-operational">
+      <span>Operacionales</span>
+      <strong>{{ operational_processes|length }}</strong>
+      <small>Procesos criticos del servicio</small>
+    </div>
+    <div class="sg-process-overview-card sg-process-overview-support">
+      <span>Apoyo</span>
+      <strong>{{ support_processes|length }}</strong>
+      <small>Procesos de soporte interno</small>
+    </div>
+  </section>
+
+  <form method="get" class="sg-filter-bar">
+    <div class="sg-filter-grid-medium">
+      <div class="sg-filter-field">
+        <label class="sg-filter-label" for="q">Buscar</label>
+        <input id="q" type="search" name="q" value="{{ query }}" class="sg-filter-control" placeholder="Codigo, nombre o responsable">
+      </div>
+      <div class="sg-filter-field">
+        <label class="sg-filter-label" for="category">Tipo</label>
+        <select id="category" name="category" class="sg-filter-control">
+          <option value="">Todos</option>
+          {% for value, label in categories %}
+            <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="sg-filter-actions">
+        <button class="sg-button-compact-primary" type="submit">Filtrar</button>
+        {% if is_obsolete_view %}
+          <a href="{% url 'sgc:obsolete_processes' %}" class="sg-button-compact">Limpiar</a>
+        {% else %}
+          <a href="{% url 'sgc:processes' %}" class="sg-button-compact">Limpiar</a>
+        {% endif %}
+      </div>
+    </div>
+  </form>
+
+  {% if is_obsolete_view %}
+    <div class="sg-document-warning">
+      <span class="font-semibold">Control de procesos:</span>
+      estos procesos estan obsoletos y no deben utilizarse. La eliminacion definitiva debe ser excepcional.
+    </div>
+  {% endif %}
+
+  {% if selected_category_label or query %}
+    <div class="sg-active-filter max-w-3xl">
+      <span class="font-semibold text-neutral-950">Filtro activo:</span>
+      {% if selected_category_label %}{{ selected_category_label }}{% endif %}
+      {% if query %}{% if selected_category_label %} - {% endif %}"{{ query }}"{% endif %}
+    </div>
+  {% endif %}
+
+  {% if total_processes %}
+    <div>
+      {% if not selected_category or selected_category == "operacional" %}
+        <section class="sg-process-section">
+          <div class="sg-process-section-head">
+            <div>
+              <p>Operacionales</p>
+              <h2>Procesos operacionales</h2>
+            </div>
+            <span class="sg-badge sg-badge-neutral">{{ operational_processes|length }}</span>
+          </div>
+
+          {% if operational_processes %}
+            <div class="sg-process-grid">
+              {% for process in operational_processes %}
+                {% include "sgc/partials/process_card.html" with process=process card_tone="operacional" is_obsolete_view=is_obsolete_view %}
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="sg-card px-5 py-6 text-sm text-neutral-500">
+              {% if is_obsolete_view %}No hay procesos operacionales obsoletos.{% else %}No hay procesos operacionales publicados.{% endif %}
+            </div>
+          {% endif %}
+        </section>
+      {% endif %}
+
+      {% if not selected_category or selected_category == "apoyo" %}
+        <section class="sg-process-section">
+          <div class="sg-process-section-head">
+            <div>
+              <p>Apoyo</p>
+              <h2>Procesos de apoyo</h2>
+            </div>
+            <span class="sg-badge sg-badge-neutral">{{ support_processes|length }}</span>
+          </div>
+
+          {% if support_processes %}
+            <div class="sg-process-grid">
+              {% for process in support_processes %}
+                {% include "sgc/partials/process_card.html" with process=process card_tone="apoyo" is_obsolete_view=is_obsolete_view %}
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="sg-card px-5 py-6 text-sm text-neutral-500">
+              {% if is_obsolete_view %}No hay procesos de apoyo obsoletos.{% else %}No hay procesos de apoyo publicados.{% endif %}
+            </div>
+          {% endif %}
+        </section>
+      {% endif %}
+    </div>
+  {% else %}
+    <div class="sg-card px-5 py-10 text-center text-sm text-neutral-500">
+      {% if is_obsolete_view %}No hay procesos obsoletos para los filtros seleccionados.{% else %}No hay procesos publicados para los filtros seleccionados.{% endif %}
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Usuarios | Sistema de gestion{% endblock %}
+
+{% block content %}
+<section class="sg-page">
+  <div class="sg-page-header">
+    <div>
+      <p class="sg-section-kicker">Usuarios y roles</p>
+      <h1>Administracion de usuarios</h1>
+      <p>Gestiona los accesos del sistema y los roles operativos del flujo de hallazgos.</p>
+    </div>
+    <a href="{% url 'accounts:user_create' %}" class="sg-button-primary">Crear usuario</a>
+  </div>
+
+  <section class="sg-user-representatives">
+    <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h2 class="sg-section-title">Representante de la Gerencia</h2>
+        <p class="mt-1 text-sm text-neutral-600">Usuarios con permiso para validar, clasificar, asignar y cerrar hallazgos.</p>
+      </div>
+      <span class="sg-badge bg-[#2271b1] text-white">{{ representatives|length }}</span>
+    </div>
+
+    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      {% for representative in representatives %}
+        <article class="sg-user-card">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="font-semibold text-neutral-950">{{ representative.get_full_name|default:representative.username }}</p>
+              <p class="mt-1 truncate text-sm text-neutral-500">{{ representative.email|default:"Sin correo registrado" }}</p>
+            </div>
+            {% if representative.is_active %}
+              <span class="sg-badge sg-badge-progress">Activo</span>
+            {% else %}
+              <span class="sg-badge sg-badge-neutral">Inactivo</span>
+            {% endif %}
+          </div>
+          <a href="{% url 'accounts:user_update' representative.pk %}" class="mt-3 inline-flex text-sm font-medium text-[#2271b1] hover:underline">Editar usuario</a>
+        </article>
+      {% empty %}
+        <div class="rounded border border-dashed border-neutral-300 bg-white px-4 py-6 text-sm text-neutral-500 md:col-span-2 xl:col-span-3">
+          No hay usuarios asignados como Representante de la Gerencia.
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="mb-6 sg-card p-5 sg-user-roles-card">
+    <div class="mb-4">
+      <p class="sg-section-kicker">Matriz de permisos</p>
+      <h2 class="mt-1 sg-section-title">Roles disponibles</h2>
+    </div>
+    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      {% for role in role_cards %}
+        <article class="rounded-xl border border-[#d7dee8] bg-[#f8fbff] p-4">
+          <p class="font-semibold text-neutral-950">{{ role.name }}</p>
+          <p class="mt-2 text-sm leading-5 text-neutral-600">{{ role.description }}</p>
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <div class="sg-table-wrap">
+    <table class="sg-table">
+      <thead class="bg-neutral-50">
+        <tr>
+          <th>Usuario</th>
+          <th>Nombre</th>
+          <th>Correo</th>
+          <th>Roles</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for account in users %}
+          <tr class="sg-table-row">
+            <td class="font-semibold">{{ account.username }}</td>
+            <td>{{ account.get_full_name|default:"-" }}</td>
+            <td>{{ account.email|default:"-" }}</td>
+            <td>
+              <div class="flex flex-wrap gap-1">
+                {% for role_name in account.role_names %}
+                  <span class="sg-badge sg-badge-neutral">{{ role_name }}</span>
+                {% empty %}
+                  <span class="text-sm text-neutral-500">Sin rol</span>
+                {% endfor %}
+              </div>
+            </td>
+            <td>
+              {% if account.is_active %}
+                <span class="sg-badge sg-badge-progress">Activo</span>
+              {% else %}
+                <span class="sg-badge sg-badge-neutral">Inactivo</span>
+              {% endif %}
+            </td>
+            <td class="text-right">
+              <div class="flex justify-end gap-2">
+                <a href="{% url 'accounts:user_update' account.pk %}" class="sg-row-action">Editar</a>
+                <form method="post" action="{% url 'accounts:user_toggle_active' account.pk %}">
+                  {% csrf_token %}
+                  <button type="submit" class="sg-row-action">
+                    {% if account.is_active %}Desactivar{% else %}Activar{% endif %}
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" class="px-4 py-10 text-center text-neutral-500">Aun no hay usuarios registrados.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

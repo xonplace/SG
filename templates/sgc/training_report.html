@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Reporte de capacitaciones | {{ company.system_name }}{% endblock %}
+
+{% block content %}
+<section class="sg-page">
+  <div class="sg-page-header">
+    <div>
+      <p class="sg-section-kicker">Capacitaciones</p>
+      <h1>Reporte de cumplimiento</h1>
+      <p>Seguimiento de cursos asignados, vencimientos, avance y evaluaciones.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a href="{% url 'sgc:training' %}" class="sg-row-action">Volver</a>
+      <a href="{% url 'sgc:training_report_export' %}" class="sg-button-brand">Exportar CSV</a>
+    </div>
+  </div>
+
+  <section class="sg-lms-dashboard">
+    <article><span>Total asignaciones</span><strong>{{ total }}</strong><small>Base de analisis</small></article>
+    <article><span>Completadas</span><strong>{{ completed }}</strong><small>{{ completion_percentage }}% de cumplimiento</small></article>
+    <article><span>Pendientes</span><strong>{{ pending }}</strong><small>Requieren seguimiento</small></article>
+    <article><span>Vencidas</span><strong>{{ overdue }}</strong><small>Fuera de plazo</small></article>
+  </section>
+
+  <section class="sg-card overflow-hidden">
+    <table class="min-w-full text-sm">
+      <thead>
+        <tr>
+          <th class="px-4 py-4 text-left uppercase tracking-[0.12em] text-slate-500">Capacitacion</th>
+          <th class="px-4 py-4 text-left uppercase tracking-[0.12em] text-slate-500">Usuario</th>
+          <th class="px-4 py-4 text-left uppercase tracking-[0.12em] text-slate-500">Fecha limite</th>
+          <th class="px-4 py-4 text-left uppercase tracking-[0.12em] text-slate-500">Estado</th>
+          <th class="px-4 py-4 text-left uppercase tracking-[0.12em] text-slate-500">Evaluacion</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for row in rows %}
+          <tr>
+            <td class="px-4 py-4 font-bold text-slate-950">{{ row.assignment.content.title }}</td>
+            <td class="px-4 py-4">{{ row.assignment.user.get_full_name|default:row.assignment.user.username }}</td>
+            <td class="px-4 py-4">{% if row.assignment.due_date %}{{ row.assignment.due_date|date:"d-m-Y" }}{% else %}-{% endif %}</td>
+            <td class="px-4 py-4">
+              <span class="sg-badge {% if row.completed %}sg-badge-progress{% elif row.overdue %}sg-badge-danger{% else %}sg-badge-neutral{% endif %}">{{ row.status }}</span>
+            </td>
+            <td class="px-4 py-4">
+              {% if row.attempt %}
+                {{ row.attempt.score }}/{{ row.attempt.total_questions }} - {{ row.attempt.percentage }}%
+              {% else %}
+                -
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="px-4 py-10 text-center text-slate-500">Aun no hay capacitaciones asignadas.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</section>
+{% endblock %}

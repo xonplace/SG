@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Eliminar capacitacion | {{ company.system_name }}{% endblock %}
+
+{% block content %}
+<section class="sg-page">
+  <div class="mx-auto max-w-3xl">
+    <div class="sg-card p-8">
+      <p class="sg-section-kicker text-red-600">Eliminar capacitacion</p>
+      <h1 class="mt-2 text-3xl font-black tracking-tight text-slate-950">{{ content.title }}</h1>
+      <p class="mt-3 text-sm leading-6 text-slate-600">
+        Esta accion eliminara la capacitacion, sus asignaciones y registros de completado asociados.
+        Si solo quieres ocultarla del catalogo, usa la opcion Dar de baja.
+      </p>
+
+      <div class="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">
+        <strong class="block">Confirmacion requerida</strong>
+        <span>Esta accion no se puede deshacer desde el sitio.</span>
+      </div>
+
+      <form method="post" class="mt-8 flex flex-wrap justify-end gap-3 border-t border-slate-200 pt-5">
+        {% csrf_token %}
+        <a href="{% url 'sgc:training' %}" class="sg-button-secondary">Cancelar</a>
+        <button type="submit" class="sg-button-danger">Eliminar definitivamente</button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

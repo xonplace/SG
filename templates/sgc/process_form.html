@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} | Procesos{% endblock %}
+
+{% block content %}
+<section class="sg-form-page">
+  <div class="sg-form-panel">
+    <div class="mb-6">
+      <p class="sg-section-kicker">Procesos</p>
+      <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">{{ title }}</h1>
+      <p class="mt-2 text-sm leading-6 text-slate-600">
+        Administra la ficha del proceso, su version vigente y el control de cambios publicado.
+      </p>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="mb-5 rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+      {% if version_form.non_field_errors %}
+        <div class="mb-5 rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {{ version_form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      <div class="mb-4 border-b border-neutral-200 pb-3">
+        <h2 class="sg-section-title">Ficha del proceso</h2>
+        <p class="mt-1 text-sm text-neutral-500">Datos principales para clasificar y encontrar el proceso.</p>
+      </div>
+      <div class="sg-form-grid">
+        {% for field in form %}
+          <div class="sg-form-field {% if field.field.widget.attrs.rows or field.name == 'name' or field.name == 'change_summary' or field.name == 'prose' %}sg-form-field-wide{% endif %}">
+            {% if field.field.widget.input_type == "checkbox" %}
+              <label class="flex items-center gap-2 text-sm font-medium text-neutral-900">
+                {{ field }}
+                {{ field.label }}
+              </label>
+            {% else %}
+              <label for="{{ field.id_for_label }}" class="sg-form-label">
+                {{ field.label }}
+                {% if field.field.required %}<span class="text-red-600">*</span>{% endif %}
+              </label>
+              {{ field }}
+            {% endif %}
+            {% if field.help_text %}
+              <p class="sg-form-help">{{ field.help_text }}</p>
+            {% endif %}
+            {% for error in field.errors %}
+              <p class="sg-form-error">{{ error }}</p>
+            {% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+
+      {% if version_form %}
+        <div class="mb-4 mt-8 border-b border-neutral-200 pb-3">
+          <h2 class="sg-section-title">Version vigente y archivos</h2>
+          <p class="mt-1 text-sm text-neutral-500">Control de cambio, prosa, imagen del proceso, flujo descargable y procedimiento asociado.</p>
+        </div>
+        <div class="sg-form-grid">
+          {% for field in version_form %}
+            <div class="sg-form-field {% if field.field.widget.attrs.rows or field.name == 'change_summary' or field.name == 'prose' %}sg-form-field-wide{% endif %}">
+              {% if field.field.widget.input_type == "checkbox" %}
+                <label class="flex items-center gap-2 text-sm font-medium text-neutral-900">
+                  {{ field }}
+                  {{ field.label }}
+                </label>
+              {% else %}
+                <label for="{{ field.id_for_label }}" class="sg-form-label">
+                  {{ field.label }}
+                  {% if field.field.required %}<span class="text-red-600">*</span>{% endif %}
+                </label>
+                {{ field }}
+              {% endif %}
+              {% if field.help_text %}
+                <p class="sg-form-help">{{ field.help_text }}</p>
+              {% endif %}
+              {% if current_version and field.name == "process_image" and current_version.process_image %}
+                <p class="sg-form-help">Actual: {{ current_version.process_image.name }}</p>
+              {% endif %}
+              {% if current_version and field.name == "flow_file" and current_version.flow_file %}
+                <p class="sg-form-help">Actual: {{ current_version.flow_file.name }}</p>
+              {% endif %}
+              {% if current_version and field.name == "procedure_file" and current_version.procedure_file %}
+                <p class="sg-form-help">Actual: {{ current_version.procedure_file.name }}</p>
+              {% endif %}
+              {% for error in field.errors %}
+                <p class="sg-form-error">{{ error }}</p>
+              {% endfor %}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="sg-form-actions">
+        {% if cancel_pk %}
+          <a href="{% url cancel_url cancel_pk %}" class="sg-button-secondary">Cancelar</a>
+        {% else %}
+          <a href="{% url cancel_url %}" class="sg-button-secondary">Cancelar</a>
+        {% endif %}
+        <button type="submit" class="sg-button-primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

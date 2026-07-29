@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Plazos | Mantenedores{% endblock %}
+
+{% block content %}
+<section class="sg-form-page">
+  <div class="sg-form-panel">
+    <div class="mb-6">
+      <p class="sg-section-kicker">Mantenedores</p>
+      <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">Plazos</h1>
+      <p class="mt-2 text-sm leading-6 text-slate-600">Define los dias habiles usados automaticamente por el flujo.</p>
+    </div>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="sg-form-grid">
+        {% for field in form %}
+          <div class="sg-form-field">
+            <label for="{{ field.id_for_label }}" class="sg-form-label">{{ field.label }}</label>
+            {{ field }}
+            {% for error in field.errors %}
+              <p class="sg-form-error">{{ error }}</p>
+            {% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="sg-form-actions">
+        <a href="{% url 'maintainers:home' %}" class="sg-button-secondary">Cancelar</a>
+        <button type="submit" class="sg-button-primary">Guardar plazos</button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}{{ company.training_label }} | {{ company.system_name }}{% endblock %}
+
+{% block content %}
+<section class="sg-page sg-lms-page">
+  <div class="sg-page-header">
+    <div>
+      <p class="sg-section-kicker">Academia SGC</p>
+      <h1>{{ company.training_label }}</h1>
+      <p>Centro de cursos internos para capacitar, medir avance y conservar evidencia de aprendizaje.</p>
+    </div>
+    {% if can_manage_training %}
+      <div class="flex flex-wrap gap-2">
+        <a href="{% url 'sgc:training_report' %}" class="sg-row-action">Reporte</a>
+        <a href="{% url 'maintainers:help_content_create' %}?training=1" class="sg-button-brand">Solicitar curso</a>
+      </div>
+    {% endif %}
+  </div>
+
+  <section class="sg-lms-dashboard">
+    <article>
+      <span>Cursos disponibles</span>
+      <strong>{{ content_count }}</strong>
+      <small>Catalogo vigente</small>
+    </article>
+    <article>
+      <span>Mis pendientes</span>
+      <strong>{{ pending_count }}</strong>
+      <small>{{ assigned_completion_percentage }}% asignado completado</small>
+    </article>
+    <article>
+      <span>Vencidas</span>
+      <strong>{{ overdue_count }}</strong>
+      <small>Asignaciones fuera de plazo</small>
+    </article>
+    <article>
+      <span>Tiempo total</span>
+      <strong>{{ total_minutes }}</strong>
+      <small>Minutos publicados</small>
+    </article>
+  </section>
+
+  <section class="sg-lms-shell">
+    <div class="sg-lms-toolbar">
+      <div>
+        <h2>Listado de cursos</h2>
+        <span>{{ content_count }} curso(s) total</span>
+      </div>
+      <form method="get" class="sg-lms-filters">
+        <select name="status">
+          <option value="">Ordenar por: Mas reciente</option>
+          <option value="asignadas" {% if selected_status == "asignadas" %}selected{% endif %}>Mis asignadas</option>
+          <option value="pendientes" {% if selected_status == "pendientes" %}selected{% endif %}>Pendientes</option>
+          <option value="completadas" {% if selected_status == "completadas" %}selected{% endif %}>Completadas</option>
+          <option value="vencidas" {% if selected_status == "vencidas" %}selected{% endif %}>Vencidas</option>
+        </select>
+        <select name="category">
+          <option value="">Todas las categorias</option>
+          {% for value, label in category_choices %}
+            <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <input type="search" name="q" value="{{ query }}" placeholder="Buscar curso">
+        <button type="submit" class="sg-button-brand-compact">Filtrar</button>
+        <a href="{% url 'sgc:training' %}" class="sg-row-action">Limpiar</a>
+      </form>
+    </div>
+
+    <div class="sg-lms-course-grid">
+      {% for item in training_items %}
+        <article class="sg-lms-course-card {% if item.is_completed %}sg-lms-course-completed{% endif %} {% if not item.can_open %}sg-lms-course-locked{% endif %}">
+          {% if item.can_open %}
+            <a href="{% url 'sgc:training_detail' item.content.pk %}" class="sg-lms-course-media">
+          {% else %}
+            <div class="sg-lms-course-media" aria-disabled="true">
+          {% endif %}
+            {% if item.content.image %}
+              <img src="{{ item.content.image.url }}" alt="{{ item.content.title }}">
+            {% else %}
+              <div class="sg-lms-course-placeholder">
+                <span>{{ item.content.get_training_category_display|slice:":2"|upper }}</span>
+              </div>
+            {% endif %}
+            {% if item.content.has_video %}
+              <span class="sg-lms-video-pill">Video</span>
+            {% endif %}
+          {% if item.can_open %}
+            </a>
+          {% else %}
+            </div>
+          {% endif %}
+          <div class="sg-lms-course-body">
+            <div class="sg-lms-course-topline">
+              <span>{{ item.content.get_training_category_display }}</span>
+              {% if item.is_completed %}
+                <strong class="is-done">Completado</strong>
+              {% elif item.is_overdue %}
+                <strong class="is-late">Vencida</strong>
+              {% elif item.is_assigned %}
+                <strong class="is-assigned">Asignada</strong>
+              {% elif item.is_general %}
+                <strong class="is-general">General</strong>
+              {% else %}
+                <strong class="is-locked">No inscrito</strong>
+              {% endif %}
+            </div>
+            <h3>
+              {% if item.can_open %}
+                <a href="{% url 'sgc:training_detail' item.content.pk %}">{{ item.content.title }}</a>
+              {% else %}
+                <span>{{ item.content.title }}</span>
+              {% endif %}
+            </h3>
+            {% if item.content.summary %}
+              <p>{{ item.content.summary }}</p>
+            {% endif %}
+            <div class="sg-lms-course-meta">
+              {% if item.content.estimated_minutes %}<span>{{ item.content.estimated_minutes }} min</span>{% endif %}
+              {% if item.question_count %}<span>{{ item.question_count }} pregunta(s)</span>{% endif %}
+              {% if item.assignment and item.assignment.due_date %}<span>Limite {{ item.assignment.due_date|date:"d-m-Y" }}</span>{% endif %}
+            </div>
+          </div>
+          <div class="sg-lms-course-actions">
+            {% if item.can_open %}
+              <a href="{% url 'sgc:training_detail' item.content.pk %}" class="sg-row-action">Abrir curso</a>
+            {% else %}
+              <span class="sg-row-action sg-row-action-disabled">No inscrito</span>
+            {% endif %}
+            {% if can_manage_training %}
+              <a href="{% url 'sgc:training_assign' item.content.pk %}" class="sg-row-action">Asignar</a>
+              <a href="{% url 'sgc:training_questions' item.content.pk %}" class="sg-row-action">Evaluacion</a>
+              <a href="{% url 'maintainers:help_content_update' item.content.pk %}" class="sg-row-action">Editar</a>
+            {% endif %}
+          </div>
+        </article>
+      {% empty %}
+        <div class="sg-card p-8 text-center">
+          <p class="text-sm font-semibold text-slate-500">No hay cursos para los filtros seleccionados.</p>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+</section>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Configuracion de empresa | Mantenedores{% endblock %}
+
+{% block content %}
+<section class="sg-form-page">
+  <div class="sg-form-panel">
+    <div class="mb-6">
+      <p class="sg-section-kicker">Mantenedores</p>
+      <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">Configuracion de empresa</h1>
+      <p class="mt-2 text-sm leading-6 text-slate-600">Personaliza el sistema para la empresa que lo utiliza.</p>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+      <div class="sg-form-grid">
+        {% for field in form %}
+          <div class="sg-form-field {% if field.name == 'scope' or field.name == 'welcome_text' or field.name == 'public_portal_text' or field.name == 'finding_callout_text' or field.name == 'logo' or field.name == 'header_logo' %}sg-form-field-wide{% endif %}">
+            {% if field.field.widget.input_type == "checkbox" %}
+              <label class="flex items-center gap-2 text-sm font-medium text-neutral-900">
+                {{ field }}
+                {{ field.label }}
+              </label>
+            {% else %}
+              <label for="{{ field.id_for_label }}" class="sg-form-label">{{ field.label }}</label>
+              {{ field }}
+            {% endif %}
+            {% if field.help_text %}
+              <p class="sg-form-help">{{ field.help_text }}</p>
+            {% endif %}
+            {% for error in field.errors %}
+              <p class="sg-form-error">{{ error }}</p>
+            {% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="sg-form-actions">
+        <a href="{% url 'maintainers:home' %}" class="sg-button-secondary">Cancelar</a>
+        <button type="submit" class="sg-button-primary">Guardar configuracion</button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

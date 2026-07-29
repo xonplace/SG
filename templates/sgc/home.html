@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ company.sgc_home_title }} | {{ company.system_name }}{% endblock %}
+
+{% block content %}
+<section class="sg-page sg-home-page">
+  <div class="sg-page-header">
+    <div>
+      <p class="sg-section-kicker">{{ company.system_name }}</p>
+      <h1>{{ company.sgc_home_title }}</h1>
+      <p>{{ company.sgc_home_subtitle }}</p>
+    </div>
+    {% if company.show_findings_module and can_create_findings %}
+      <a href="{% url 'findings:create' %}" class="sg-button-brand">Registrar hallazgo</a>
+    {% endif %}
+  </div>
+
+  <div class="sg-home-layout">
+    <main class="space-y-4">
+      <div class="sg-home-stat-grid">
+        {% if company.show_documents_module and can_view_sgc_documents %}
+          <a href="{% url 'sgc:documents' %}" class="sg-home-stat-card sg-home-stat-blue">
+            <span class="sg-home-stat-icon">
+              <svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M14 3v4h4"/><path d="M9 13h6"/><path d="M9 17h4"/></svg>
+            </span>
+            <span>
+              <small>Documentos publicados</small>
+              <strong>{{ metrics.documents }}</strong>
+              <em>Biblioteca SGC</em>
+            </span>
+          </a>
+        {% endif %}
+        {% if company.show_findings_module and can_view_findings %}
+          <a href="{% url 'findings:list' %}?status=abiertos" class="sg-home-stat-card sg-home-stat-amber">
+            <span class="sg-home-stat-icon">
+              <svg viewBox="0 0 24 24"><path d="M12 3l8 4v6c0 5-3.4 7.7-8 9-4.6-1.3-8-4-8-9V7z"/><path d="M12 8v5"/><path d="M12 17h.01"/></svg>
+            </span>
+            <span>
+              <small>Hallazgos abiertos</small>
+              <strong>{{ metrics.open_findings }}</strong>
+              <em>En tratamiento</em>
+            </span>
+          </a>
+          <a href="{% url 'findings:due' %}" class="sg-home-stat-card sg-home-stat-purple">
+            <span class="sg-home-stat-icon">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            </span>
+            <span>
+              <small>Vencidos / por vencer</small>
+              <strong>{{ metrics.due_findings }}</strong>
+              <em>Control de plazos</em>
+            </span>
+          </a>
+          <a href="{% url 'findings:list' %}?status=cerrados" class="sg-home-stat-card sg-home-stat-green">
+            <span class="sg-home-stat-icon">
+              <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/><circle cx="12" cy="12" r="9"/></svg>
+            </span>
+            <span>
+              <small>Hallazgos cerrados</small>
+              <strong>{{ metrics.closed_findings }}</strong>
+              <em>Historial</em>
+            </span>
+          </a>
+        {% endif %}
+      </div>
+
+      <section class="sg-home-info-card sg-home-scope-card">
+        <span class="sg-home-info-icon sg-home-scope-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v3"/><path d="M21 12h-3"/><path d="M12 21v-3"/><path d="M3 12h3"/></svg>
+        </span>
+        <div class="min-w-0 flex-1">
+          <p class="sg-section-kicker">Alcance ISO</p>
+          <h2>Alcance del Sistema de Gestion de Calidad</h2>
+          <p>{{ company.scope }}</p>
+        </div>
+        {% if scope_document %}
+          <div class="flex shrink-0 flex-wrap gap-2">
+            <a href="{% url 'sgc:download_document' scope_document.pk %}" class="sg-button-brand-compact">Descargar</a>
+          </div>
+        {% endif %}
+      </section>
+
+      {% if company.quality_policy or company.mission or company.vision %}
+        <section class="sg-home-info-card">
+          <span class="sg-home-info-icon sg-home-info-icon-soft">
+            <svg viewBox="0 0 24 24"><path d="M12 3l8 4v6c0 5-3.4 7.7-8 9-4.6-1.3-8-4-8-9V7z"/><path d="M9 12l2 2 4-5"/></svg>
+          </span>
+          <div class="min-w-0 flex-1">
+            <p class="sg-section-kicker">Identidad del SGC</p>
+            <h2 class="mt-2 text-base font-bold text-slate-950">{{ company.commitment_card_title }}</h2>
+            <p class="mt-2 text-sm leading-6 text-slate-600">{{ company.commitment_card_text }}</p>
+          </div>
+          <div class="flex shrink-0 flex-wrap gap-2">
+            <button type="button" class="sg-button-brand-compact" onclick="document.getElementById('sgc-identity-dialog').showModal()">{{ company.commitment_card_title }}</button>
+            {% if can_manage_sgc_identity %}
+              <a href="{% url 'maintainers:sgc_identity' %}" class="sg-row-action">Editar</a>
+            {% endif %}
+          </div>
+        </section>
+
+        <dialog id="sgc-identity-dialog" class="sg-help-dialog">
+          <div class="sg-help-dialog-shell">
+            <div class="sg-help-hero">
+              <div>
+                <p class="sg-section-kicker">{{ company.quality_system_name }}</p>
+                <h2>{{ company.commitment_dialog_title }}</h2>
+                <p>{{ company.commitment_dialog_text }}</p>
+              </div>
+              <button type="button" class="sg-help-close" onclick="document.getElementById('sgc-identity-dialog').close()">Cerrar</button>
+            </div>
+            <div class="sg-help-content">
+              {% if company.quality_policy %}
+                <section class="sg-help-panel sg-identity-policy-panel">
+                  <div class="sg-identity-policy-copy">
+                    <div class="sg-identity-policy-head">
+                      <div class="sg-help-icon">
+                        <svg viewBox="0 0 24 24"><path d="M12 3l8 4v6c0 5-3.4 7.7-8 9-4.6-1.3-8-4-8-9V7z"/><path d="M9 12l2 2 4-5"/></svg>
+                      </div>
+                      <div>
+                        <p class="sg-section-kicker">Politica declarada</p>
+                        <h3>Politica de la Calidad</h3>
+                      </div>
+                    </div>
+                    <div class="sg-identity-policy-text">
+                      {{ company.quality_policy|linebreaksbr }}
+                    </div>
+                  </div>
+                  <figure class="sg-identity-policy-visual">
+                    <button type="button" onclick="document.getElementById('sgc-identity-image-dialog').showModal()" aria-label="Ver imagen del compromiso ISO 9001 en grande">
+                      {% if company.quality_commitment_image %}
+                        <img src="{{ company.quality_commitment_image.url }}" alt="Imagen Nuestro compromiso del SGC">
+                      {% else %}
+                        <img src="{% static 'img/iso-compromiso-calidad.png' %}" alt="Ciclo de mejora ISO 9001: planificar, hacer, verificar y actuar">
+                      {% endif %}
+                    </button>
+                    <figcaption>{{ company.commitment_image_caption }}</figcaption>
+                  </figure>
+                </section>
+              {% endif %}
+              <section class="sg-help-grid sg-identity-card-grid">
+                {% if company.mission %}
+                  <article>
+                    <div class="sg-help-icon">
+                      <svg viewBox="0 0 24 24"><path d="M12 3l8 4v6c0 5-3.4 7.7-8 9-4.6-1.3-8-4-8-9V7z"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
+                    </div>
+                    <h4>Mision</h4>
+                    <p>{{ company.mission|linebreaksbr }}</p>
+                  </article>
+                {% endif %}
+                {% if company.vision %}
+                  <article>
+                    <div class="sg-help-icon">
+                      <svg viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </div>
+                    <h4>Vision</h4>
+                    <p>{{ company.vision|linebreaksbr }}</p>
+                  </article>
+                {% endif %}
+              </section>
+            </div>
+          </div>
+        </dialog>
+        <dialog id="sgc-identity-image-dialog" class="sg-image-dialog">
+          <div class="sg-image-dialog-shell">
+            <button type="button" class="sg-help-close" onclick="document.getElementById('sgc-identity-image-dialog').close()">Cerrar</button>
+            {% if company.quality_commitment_image %}
+              <img src="{{ company.quality_commitment_image.url }}" alt="Imagen Nuestro compromiso del SGC">
+            {% else %}
+              <img src="{% static 'img/iso-compromiso-calidad.png' %}" alt="Ciclo de mejora ISO 9001: planificar, hacer, verificar y actuar">
+            {% endif %}
+          </div>
+        </dialog>
+      {% endif %}
+
+      {% if company.show_updates_module %}
+        <section class="sg-home-info-card sg-home-update-card">
+          <span class="sg-home-info-icon sg-home-info-icon-soft">
+            <svg viewBox="0 0 24 24"><path d="M4 11v2a2 2 0 0 0 2 2h2l5 4V5l-5 4H6a2 2 0 0 0-2 2z"/><path d="M17 9a4 4 0 0 1 0 6"/><path d="M19.5 6.5a8 8 0 0 1 0 11"/></svg>
+          </span>
+          <div class="min-w-0 flex-1">
+            <p class="sg-section-kicker">Ultimo comunicado del sistema</p>
+            {% if highlighted_update %}
+              <div class="mt-3 grid gap-4 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-start">
+                <div>
+                  <h2 class="text-base font-bold text-slate-950">{{ highlighted_update.title }}</h2>
+                  <p class="sg-home-update-body">{{ highlighted_update.body }}</p>
+                </div>
+                <p class="text-xs font-semibold text-slate-500">{{ highlighted_update.published_at|date:"d-m-Y H:i" }}</p>
+                <a href="{% url 'sgc:updates' %}" class="sg-row-action">Ver todos</a>
+              </div>
+            {% else %}
+              <p class="mt-3 text-sm text-slate-500">Sin comunicados publicados.</p>
+            {% endif %}
+          </div>
+        </section>
+      {% endif %}
+    </main>
+
+    <aside class="space-y-4">
+      {% if company.show_certificate_module %}
+        <section class="sg-card sg-home-side-card">
+          <div class="mb-4 flex items-start justify-between gap-3">
+            <div>
+              <p class="sg-section-kicker">Certificado ISO 9001:2015</p>
+              {% if certificate %}
+                <span class="sg-home-live-badge">Vigente</span>
+              {% endif %}
+            </div>
+          </div>
+          {% if certificate %}
+            <div class="sg-home-cert-summary">
+              <div class="sg-home-iso-mark" aria-label="ISO 9001:2015">
+                <svg viewBox="0 0 72 72" role="img">
+                  <circle cx="36" cy="36" r="30"></circle>
+                  <path d="M22 38l8 8 20-22"></path>
+                  <path d="M24 58l-3 9 15-7 15 7-3-9"></path>
+                </svg>
+                <span>ISO</span>
+              </div>
+              <div>
+                <h2>{{ certificate.standard }}</h2>
+                <p>{{ certificate.certification_body }}</p>
+              </div>
+            </div>
+            <div class="sg-home-cert-validity">
+              <span>Vigencia</span>
+              <strong>{{ certificate.expiry_date|date:"d-m-Y"|default:"Sin fecha" }}</strong>
+              {% if certificate.days_to_expiry is not None %}
+                <small>{{ certificate.days_to_expiry }} dias restantes</small>
+              {% endif %}
+            </div>
+            <div class="mt-4 grid grid-cols-2 gap-2">
+              <a href="{{ certificate.preview_url }}" target="_blank" rel="noopener" class="sg-row-action h-10">Ver certificado</a>
+              <a href="{{ certificate.download_url }}" class="sg-button-brand-compact h-10">Descargar</a>
+            </div>
+          {% else %}
+            <p class="text-sm text-slate-500">Aun no hay certificado cargado.</p>
+          {% endif %}
+        </section>
+      {% endif %}
+
+      <section class="sg-card sg-home-side-card">
+        <div class="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <p class="sg-section-kicker">Fechas importantes</p>
+            <h2 class="sg-section-title">Calendario del SGC</h2>
+          </div>
+          {% if can_manage_sgc_dates %}
+            <a href="{% url 'sgc:important_dates' %}" class="sg-row-action">Editar</a>
+          {% endif %}
+        </div>
+        <div class="grid gap-3">
+          <div class="sg-home-date-card sg-home-date-blue">
+            <i><svg viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/></svg></i>
+            <div>
+              <span>Auditoria interna</span>
+              <strong>{{ important_dates.internal_audit_date|date:"d-m-Y"|default:"Sin fecha" }}</strong>
+            </div>
+          </div>
+          <div class="sg-home-date-card sg-home-date-amber">
+            <i><svg viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/></svg></i>
+            <div>
+              <span>Auditoria externa</span>
+              <strong>{{ important_dates.external_audit_date|date:"d-m-Y"|default:"Sin fecha" }}</strong>
+            </div>
+          </div>
+          <div class="sg-home-date-card sg-home-date-green">
+            <i><svg viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/></svg></i>
+            <div>
+              <span>Revision por la gerencia</span>
+              <strong>{{ important_dates.management_review_date|date:"d-m-Y"|default:"Sin fecha" }}</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </div>
+</section>
+{% endblock %}

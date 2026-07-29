@@ -1,0 +1,17 @@
+<article class="px-5 py-3">
+  <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <div class="min-w-0">
+      <p class="truncate font-semibold text-slate-950">{{ document.title }}</p>
+      <p class="mt-1 text-xs text-slate-500">
+        {{ document.get_clause_display }} · {{ document.document_type_label }} · {{ document.file_filename }}
+      </p>
+      <p class="mt-2 inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800">{{ reason }}</p>
+    </div>
+    <div class="flex shrink-0 flex-wrap gap-2">
+      <a href="{% url 'sgc:view_document' document.pk %}" target="_blank" rel="noopener" class="sg-row-action">Ver</a>
+      <a href="{% url 'sgc:download_document' document.pk %}" class="sg-row-action">Descargar</a>
+      <a href="{% url 'sgc:document_history' document.pk %}" class="sg-row-action">Historial</a>
+      <a href="{% url 'sgc:document_edit_metadata' document.pk %}?next=control" class="sg-row-action">Editar</a>
+    </div>
+  </div>
+</article>

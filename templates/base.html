@@ -1,0 +1,315 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{{ company.system_name }}{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/output.css' %}?v=20260708-v1">
+    <style>
+      :root {
+        --sg-primary: {{ company.primary_color|default:"#2271b1" }};
+        --sg-secondary: {{ company.secondary_color|default:"#193456" }};
+        --sg-accent: {{ company.accent_color|default:"#4f6df5" }};
+        --sg-page-bg: {{ company.page_background_color|default:"#f5f7fa" }};
+        --sg-button: {{ company.button_color|default:company.primary_color|default:"#2271b1" }};
+        --color-primary: {{ company.primary_color|default:"#1f4f91" }};
+        --color-primary-dark: {{ company.secondary_color|default:"#173a69" }};
+        --color-bg: {{ company.page_background_color|default:"#f5f7fa" }};
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sg-app-shell min-h-screen md:flex">
+      <aside class="sg-sidebar">
+        <a href="{% if user.is_authenticated %}{% url default_authenticated_url %}{% else %}/{% endif %}" class="sg-sidebar-brand">
+          <span class="text-sm font-semibold uppercase tracking-wide text-white">{{ company.system_name }}</span>
+          <span class="text-xs text-neutral-400">{{ company.company_name }}</span>
+        </a>
+
+        <nav class="sg-sidebar-nav">
+          {% if user.is_authenticated and company.show_sgc_menu %}
+            <details class="sg-sidebar-group" {% if request.resolver_match.app_name == 'sgc' and request.resolver_match.url_name != 'training' and request.resolver_match.url_name != 'training_detail' and request.resolver_match.url_name != 'training_report' and request.resolver_match.url_name != 'training_report_export' and request.resolver_match.url_name != 'training_assign' and request.resolver_match.url_name != 'training_delete' %}open{% endif %}>
+              <summary class="sg-sidebar-link cursor-pointer {% if request.resolver_match.app_name == 'sgc' and request.resolver_match.url_name != 'training' and request.resolver_match.url_name != 'training_detail' and request.resolver_match.url_name != 'training_report' and request.resolver_match.url_name != 'training_report_export' and request.resolver_match.url_name != 'training_assign' and request.resolver_match.url_name != 'training_delete' %}sg-sidebar-link-active{% endif %}">
+                <span class="sg-sidebar-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M14 3v4h4"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>
+                </span>
+                {{ company.sgc_menu_label }}
+                <span class="sg-sidebar-caret">v</span>
+              </summary>
+              <div class="sg-sidebar-subnav">
+                <a href="{% url 'sgc:home' %}" class="sg-sidebar-sublink {% if request.resolver_match.app_name == 'sgc' and request.resolver_match.url_name == 'home' %}sg-sidebar-sublink-active{% endif %}">{{ company.sgc_home_label }}</a>
+                {% if company.show_documents_module and can_view_sgc_documents %}
+                  <details class="sg-sidebar-subgroup" {% if request.resolver_match.url_name == 'documents' or request.resolver_match.url_name == 'recent_documents' %}open{% endif %}>
+                    <summary class="sg-sidebar-sublink cursor-pointer {% if request.resolver_match.url_name == 'documents' or request.resolver_match.url_name == 'recent_documents' %}sg-sidebar-sublink-active{% endif %}">
+                      {{ company.documents_label }}
+                      <span class="sg-sidebar-caret">v</span>
+                    </summary>
+                    <div class="sg-sidebar-thirdnav">
+                      <a href="{% url 'sgc:documents' %}" class="sg-sidebar-thirdlink {% if request.resolver_match.url_name == 'documents' and request.GET.clause|default:'' == '' %}sg-sidebar-thirdlink-active{% endif %}">Todos los documentos</a>
+                      <a href="{% url 'sgc:documents' %}?clause=1" class="sg-sidebar-thirdlink {% if request.GET.clause|default:'' == '1' %}sg-sidebar-thirdlink-active{% endif %}">1 Alcance</a>
+                      <a href="{% url 'sgc:documents' %}?clause=2" class="sg-sidebar-thirdlink {% if request.GET.clause|default:'' == '2' %}sg-sidebar-thirdlink-active{% endif %}">2 Referencias normativas</a>
+                      <a href="{% url 'sgc:documents' %}?clause=3" class="sg-sidebar-thirdlink {% if request.GET.clause|default:'' == '3' %}sg-sidebar-thirdlink-active{% endif %}">3 Terminos y definiciones</a>
+                      <a href="{% url 'sgc:documents' %}?clause=4" class="sg-sidebar-thirdlink {% if request.GET.clause|default:'' == '4' %}sg-sidebar-thirdlink-active{% endif %}">4 Contexto de la organizacion</a>
+                      <a href="{% url 'sgc:documents' %}?clause=5" class="sg-sidebar-thirdlink {% if request.GET.clause|default:'' == '5' %}sg-sidebar-thirdlink-active{% endif %}">5 Liderazgo</a>
+                      <a href="{% url 'sgc:documents' %}?clause=6" class="sg-sidebar-thirdlink {% if request.GET.clause|default:'' == '6' %}sg-sidebar-thirdlink-active{% endif %}">6 Planificacion</a>
+                      <a href="{% url 'sgc:documents' %}?clause=7" class="sg-sidebar-thirdlink {% if request.GET.clause|default:'' == '7' %}sg-sidebar-thirdlink-active{% endif %}">7 Apoyo</a>
+                      <a href="{% url 'sgc:documents' %}?clause=8" class="sg-sidebar-thirdlink {% if request.GET.clause|default:'' == '8' %}sg-sidebar-thirdlink-active{% endif %}">8 Operacion</a>
+                      <a href="{% url 'sgc:documents' %}?clause=9" class="sg-sidebar-thirdlink {% if request.GET.clause|default:'' == '9' %}sg-sidebar-thirdlink-active{% endif %}">9 Evaluacion del desempeno</a>
+                      <a href="{% url 'sgc:documents' %}?clause=10" class="sg-sidebar-thirdlink {% if request.GET.clause|default:'' == '10' %}sg-sidebar-thirdlink-active{% endif %}">10 Mejora</a>
+                    </div>
+                  </details>
+                {% endif %}
+                {% if can_view_sgc_documents %}
+                  <a href="{% url 'sgc:official_forms' %}" class="sg-sidebar-sublink {% if request.resolver_match.url_name == 'official_forms' or request.resolver_match.url_name == 'official_form_create' or request.resolver_match.url_name == 'official_form_update' %}sg-sidebar-sublink-active{% endif %}">{{ company.forms_label }}</a>
+                {% endif %}
+                {% if company.show_certificate_module %}
+                  <a href="{% url 'sgc:certificate' %}" class="sg-sidebar-sublink {% if request.resolver_match.url_name == 'certificate' %}sg-sidebar-sublink-active{% endif %}">{{ company.certificate_label }}</a>
+                {% endif %}
+                {% if company.show_processes_module %}
+                  <a href="{% url 'sgc:processes' %}" class="sg-sidebar-sublink {% if request.resolver_match.url_name == 'processes' or request.resolver_match.url_name == 'process_detail' or request.resolver_match.url_name == 'process_create' or request.resolver_match.url_name == 'process_update' or request.resolver_match.url_name == 'process_version_create' %}sg-sidebar-sublink-active{% endif %}">{{ company.processes_label }}</a>
+                {% endif %}
+                {% if company.show_updates_module %}
+                  <a href="{% url 'sgc:updates' %}" class="sg-sidebar-sublink {% if request.resolver_match.url_name == 'updates' %}sg-sidebar-sublink-active{% endif %}">{{ company.updates_label }}</a>
+                {% endif %}
+              </div>
+            </details>
+          {% endif %}
+          {% if user.is_authenticated and company.show_training_module %}
+            <details class="sg-sidebar-group" {% if request.resolver_match.app_name == 'sgc' and request.resolver_match.url_name == 'training' or request.resolver_match.url_name == 'my_training' or request.resolver_match.url_name == 'training_detail' or request.resolver_match.url_name == 'training_evaluation' or request.resolver_match.url_name == 'training_report' or request.resolver_match.url_name == 'training_assign' or request.resolver_match.url_name == 'training_delete' %}open{% endif %}>
+              <summary class="sg-sidebar-link cursor-pointer {% if request.resolver_match.app_name == 'sgc' and request.resolver_match.url_name == 'training' or request.resolver_match.url_name == 'my_training' or request.resolver_match.url_name == 'training_detail' or request.resolver_match.url_name == 'training_evaluation' or request.resolver_match.url_name == 'training_report' or request.resolver_match.url_name == 'training_assign' or request.resolver_match.url_name == 'training_delete' %}sg-sidebar-link-active{% endif %}">
+                <span class="sg-sidebar-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-1.5z"/><path d="M8 7h7"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>
+                </span>
+                {{ company.training_label }}
+                <span class="sg-sidebar-caret">v</span>
+              </summary>
+              <div class="sg-sidebar-subnav">
+                <a href="{% url 'sgc:training' %}" class="sg-sidebar-sublink {% if request.resolver_match.url_name == 'training' or request.resolver_match.url_name == 'training_detail' or request.resolver_match.url_name == 'training_evaluation' %}sg-sidebar-sublink-active{% endif %}">Catalogo de cursos</a>
+                <a href="{% url 'sgc:my_training' %}" class="sg-sidebar-sublink {% if request.resolver_match.url_name == 'my_training' %}sg-sidebar-sublink-active{% endif %}">Mis capacitaciones</a>
+                {% if can_manage_sgc_content %}
+                  <a href="{% url 'sgc:training_report' %}" class="sg-sidebar-sublink {% if request.resolver_match.url_name == 'training_report' %}sg-sidebar-sublink-active{% endif %}">Reporte</a>
+                {% endif %}
+              </div>
+            </details>
+          {% endif %}
+          {% if company.show_findings_module and can_create_findings or company.show_findings_module and can_view_findings %}
+          <details class="sg-sidebar-group" {% if request.resolver_match.app_name == 'findings' %}open{% endif %}>
+            <summary class="sg-sidebar-link cursor-pointer {% if request.resolver_match.app_name == 'findings' %}sg-sidebar-link-active{% endif %}">
+              <span class="sg-sidebar-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 3l8 4v6c0 5-3.4 7.7-8 9-4.6-1.3-8-4-8-9V7z"/><path d="M12 8v5"/><path d="M12 17h.01"/></svg>
+              </span>
+              {{ company.findings_label }}
+              <span class="sg-sidebar-caret">v</span>
+            </summary>
+            <div class="sg-sidebar-subnav">
+              {% if user.is_authenticated and can_view_findings %}
+                <a href="{% url 'findings:list' %}" class="sg-sidebar-sublink {% if request.resolver_match.url_name == 'list' %}sg-sidebar-sublink-active{% endif %}">{{ company.findings_board_label }}</a>
+              {% endif %}
+              {% if can_create_findings %}
+                <a href="{% url 'findings:create' %}" class="sg-sidebar-sublink {% if request.resolver_match.url_name == 'create' %}sg-sidebar-sublink-active{% endif %}">{{ company.new_finding_label }}</a>
+              {% endif %}
+              {% if user.is_authenticated and can_view_findings %}
+                <a href="{% url 'findings:my_tasks' %}" class="sg-sidebar-sublink {% if request.resolver_match.url_name == 'my_tasks' %}sg-sidebar-sublink-active{% endif %}">{{ company.my_tasks_label }}</a>
+                <a href="{% url 'findings:due' %}" class="sg-sidebar-sublink {% if request.resolver_match.url_name == 'due' %}sg-sidebar-sublink-active{% endif %}">{{ company.due_label }}</a>
+              {% endif %}
+              {% if user.is_authenticated and can_view_reports %}
+                <a href="{% url 'findings:reports' %}" class="sg-sidebar-sublink {% if request.resolver_match.url_name == 'reports' %}sg-sidebar-sublink-active{% endif %}">{{ company.reports_label }}</a>
+              {% endif %}
+            </div>
+          </details>
+          {% endif %}
+          {% if can_manage_system or can_manage_users or can_manage_sgc_content or can_manage_sgc_dates or can_manage_sgc_documents or can_manage_sgc_processes or can_manage_sgc_updates or can_manage_sgc_certificates or can_manage_sgc_forms or can_manage_sgc_identity %}
+            <details class="sg-sidebar-group" {% if request.resolver_match.app_name == 'maintainers' or request.resolver_match.app_name == 'accounts' or request.resolver_match.url_name == 'important_dates' or request.resolver_match.url_name == 'document_control_dashboard' or request.resolver_match.url_name == 'document_matrix' or request.resolver_match.url_name == 'obsolete_documents' or request.resolver_match.url_name == 'obsolete_processes' or request.resolver_match.url_name == 'document_delete' or request.resolver_match.url_name == 'process_delete' %}open{% endif %}>
+              <summary class="sg-sidebar-link cursor-pointer {% if request.resolver_match.app_name == 'maintainers' or request.resolver_match.app_name == 'accounts' or request.resolver_match.url_name == 'important_dates' or request.resolver_match.url_name == 'document_control_dashboard' or request.resolver_match.url_name == 'document_matrix' or request.resolver_match.url_name == 'obsolete_documents' or request.resolver_match.url_name == 'obsolete_processes' or request.resolver_match.url_name == 'document_delete' or request.resolver_match.url_name == 'process_delete' %}sg-sidebar-link-active{% endif %}">
+                <span class="sg-sidebar-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/><path d="M7 4v6"/><path d="M17 14v6"/></svg>
+                </span>
+                {{ company.maintainers_label }}
+                <span class="sg-sidebar-caret">v</span>
+              </summary>
+              <div class="sg-sidebar-subnav">
+                {% if can_manage_system %}
+                  <a href="{% url 'maintainers:company' %}" class="sg-sidebar-sublink {% if request.resolver_match.app_name == 'maintainers' and request.resolver_match.url_name == 'company' %}sg-sidebar-sublink-active{% endif %}">Empresa</a>
+                  <a href="{% url 'maintainers:company_logo' %}" class="sg-sidebar-sublink {% if request.resolver_match.app_name == 'maintainers' and request.resolver_match.url_name == 'company_logo' %}sg-sidebar-sublink-active{% endif %}">Logo</a>
+                  <a href="{% url 'maintainers:theme' %}" class="sg-sidebar-sublink {% if request.resolver_match.app_name == 'maintainers' and request.resolver_match.url_name == 'theme' %}sg-sidebar-sublink-active{% endif %}">Tema visual</a>
+                  <a href="{% url 'maintainers:system_texts' %}" class="sg-sidebar-sublink {% if request.resolver_match.app_name == 'maintainers' and request.resolver_match.url_name == 'system_texts' %}sg-sidebar-sublink-active{% endif %}">Textos del sistema</a>
+                  <a href="{% url 'maintainers:modules' %}" class="sg-sidebar-sublink {% if request.resolver_match.app_name == 'maintainers' and request.resolver_match.url_name == 'modules' %}sg-sidebar-sublink-active{% endif %}">Modulos del sistema</a>
+                  <a href="{% url 'maintainers:permission_matrix' %}" class="sg-sidebar-sublink {% if request.resolver_match.app_name == 'maintainers' and request.resolver_match.url_name == 'permission_matrix' %}sg-sidebar-sublink-active{% endif %}">Matriz de permisos</a>
+                  <a href="{% url 'maintainers:audit_log' %}" class="sg-sidebar-sublink {% if request.resolver_match.app_name == 'maintainers' and request.resolver_match.url_name == 'audit_log' %}sg-sidebar-sublink-active{% endif %}">Auditoria</a>
+                  <a href="{% url 'maintainers:list' 'areas' %}" class="sg-sidebar-sublink {% if request.resolver_match.app_name == 'maintainers' and request.resolver_match.kwargs.kind == 'areas' %}sg-sidebar-sublink-active{% endif %}">Areas</a>
+                  <a href="{% url 'maintainers:list' 'procesos' %}" class="sg-sidebar-sublink {% if request.resolver_match.app_name == 'maintainers' and request.resolver_match.kwargs.kind == 'procesos' %}sg-sidebar-sublink-active{% endif %}">Procesos</a>
+                  <a href="{% url 'maintainers:list' 'fuentes' %}" class="sg-sidebar-sublink {% if request.resolver_match.app_name == 'maintainers' and request.resolver_match.kwargs.kind == 'fuentes' %}sg-sidebar-sublink-active{% endif %}">Fuentes</a>
+                  <a href="{% url 'maintainers:list' 'tipos-documento' %}" class="sg-sidebar-sublink {% if request.resolver_match.app_name == 'maintainers' and request.resolver_match.kwargs.kind == 'tipos-documento' %}sg-sidebar-sublink-active{% endif %}">Tipos de documento</a>
+                  <a href="{% url 'maintainers:deadlines' %}" class="sg-sidebar-sublink {% if request.resolver_match.url_name == 'deadlines' %}sg-sidebar-sublink-active{% endif %}">Plazos</a>
+                {% endif %}
+                {% if can_manage_users %}
+                  <a href="{% url 'accounts:user_list' %}" class="sg-sidebar-sublink {% if request.resolver_match.app_name == 'accounts' %}sg-sidebar-sublink-active{% endif %}">Usuarios</a>
+                {% endif %}
+                {% if can_manage_sgc_identity %}
+                  <a href="{% url 'maintainers:sgc_identity' %}" class="sg-sidebar-sublink {% if request.resolver_match.app_name == 'maintainers' and request.resolver_match.url_name == 'sgc_identity' %}sg-sidebar-sublink-active{% endif %}">Identidad SGC</a>
+                {% endif %}
+                {% if can_manage_sgc_content %}
+                  <a href="{% url 'maintainers:help_contents' %}" class="sg-sidebar-sublink {% if request.resolver_match.app_name == 'maintainers' and request.resolver_match.url_name == 'help_contents' %}sg-sidebar-sublink-active{% endif %}">Ayuda y capacitacion</a>
+                {% endif %}
+                {% if can_manage_sgc_dates %}
+                  <a href="{% url 'sgc:important_dates' %}" class="sg-sidebar-sublink {% if request.resolver_match.app_name == 'sgc' and request.resolver_match.url_name == 'important_dates' %}sg-sidebar-sublink-active{% endif %}">Fechas importantes</a>
+                {% endif %}
+                {% if can_manage_sgc_documents %}
+                  <a href="{% url 'sgc:document_control_dashboard' %}" class="sg-sidebar-sublink {% if request.resolver_match.url_name == 'document_control_dashboard' %}sg-sidebar-sublink-active{% endif %}">Control documental</a>
+                  <a href="{% url 'sgc:document_matrix' %}" class="sg-sidebar-sublink {% if request.resolver_match.url_name == 'document_matrix' %}sg-sidebar-sublink-active{% endif %}">Matriz documental</a>
+                  <a href="{% url 'sgc:obsolete_documents' %}" class="sg-sidebar-sublink {% if request.resolver_match.url_name == 'obsolete_documents' or request.resolver_match.url_name == 'document_delete' %}sg-sidebar-sublink-active{% endif %}">Documentos obsoletos</a>
+                {% endif %}
+                {% if can_manage_sgc_processes %}
+                  <a href="{% url 'sgc:obsolete_processes' %}" class="sg-sidebar-sublink {% if request.resolver_match.url_name == 'obsolete_processes' or request.resolver_match.url_name == 'process_delete' %}sg-sidebar-sublink-active{% endif %}">Procesos obsoletos</a>
+                {% endif %}
+              </div>
+            </details>
+          {% endif %}
+        </nav>
+
+        <div class="sg-sidebar-footer">
+          {% if user.is_authenticated %}
+            <div class="sg-sidebar-user">
+              <span class="sg-sidebar-user-avatar">{{ user.get_username|slice:":2"|upper }}</span>
+              <span class="min-w-0">
+                <strong>{{ user.get_full_name|default:user.get_username }}</strong>
+                <small>{{ user.get_username }}</small>
+              </span>
+            </div>
+            <form method="post" action="{% url 'logout' %}">
+              {% csrf_token %}
+              <button type="submit" class="sg-sidebar-link w-full">
+                <span class="sg-sidebar-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M21 3v18"/></svg>
+                </span>
+                Salir
+              </button>
+            </form>
+          {% else %}
+            <a href="{% url 'login' %}" class="sg-sidebar-link">
+              <span class="sg-sidebar-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M14 8l4 4-4 4"/><path d="M18 12H6"/><path d="M6 4h-1a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h1"/></svg>
+              </span>
+              Entrar
+            </a>
+          {% endif %}
+        </div>
+      </aside>
+
+      <div class="sg-main-shell min-w-0 flex-1">
+        <header class="sg-top-header relative flex h-20 items-center justify-between border-b border-neutral-200 bg-white px-5 py-3">
+          <a href="{% if user.is_authenticated %}{% url default_authenticated_url %}{% else %}/{% endif %}" class="flex items-center gap-3">
+            <span class="text-xs font-medium uppercase tracking-wide text-neutral-600 md:hidden">{{ company.system_name }}</span>
+          </a>
+          <a href="{% if user.is_authenticated %}{% url default_authenticated_url %}{% else %}/{% endif %}" class="absolute left-1/2 -translate-x-1/2">
+            {% if company.header_logo %}
+              <img src="{{ company.header_logo.url }}" alt="{{ company.company_name }}" class="h-16 max-w-[420px] object-contain">
+            {% elif company.logo %}
+              <img src="{{ company.logo.url }}" alt="{{ company.company_name }}" class="h-16 max-w-[420px] object-contain">
+            {% else %}
+              <span class="sg-brand-wordmark">{{ company.company_name }}</span>
+            {% endif %}
+          </a>
+          <div class="flex items-center gap-3">
+            {% if user.is_authenticated %}
+              <button type="button" class="sg-top-icon" aria-label="Buscar">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+              </button>
+              <details class="sg-top-notifications">
+                <summary class="sg-top-icon sg-top-icon-badge" aria-label="Notificaciones">
+                  <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"/><path d="M10 19a2 2 0 0 0 4 0"/></svg>
+                  {% if topbar_notifications.count %}
+                    <span>{{ topbar_notifications.count }}</span>
+                  {% endif %}
+                </summary>
+                <div class="sg-notification-panel">
+                  <div class="sg-notification-head">
+                    <div>
+                      <p>Notificaciones</p>
+                      <strong>Tareas pendientes</strong>
+                    </div>
+                    <span>{{ topbar_notifications.count }}</span>
+                  </div>
+                  {% if topbar_notifications.items %}
+                    <div class="sg-notification-list">
+                      {% for item in topbar_notifications.items %}
+                        <a href="{{ item.url }}" class="sg-notification-item">
+                          <span class="sg-notification-kind">{{ item.kind }}</span>
+                          <span class="sg-notification-body">
+                            <strong>{{ item.code }} · {{ item.action }}</strong>
+                            <small>{{ item.description|truncatechars:78 }}</small>
+                            {% if item.due %}
+                              <em>{{ item.due }}</em>
+                            {% endif %}
+                          </span>
+                        </a>
+                      {% endfor %}
+                    </div>
+                    <div class="sg-notification-actions">
+                      <a href="{% url 'findings:my_tasks' %}">Ver mis tareas</a>
+                    </div>
+                  {% else %}
+                    <div class="sg-notification-empty">
+                      <strong>Sin tareas pendientes</strong>
+                      <span>Cuando tengas acciones asignadas apareceran aqui.</span>
+                    </div>
+                  {% endif %}
+                </div>
+              </details>
+              {% if company.show_training_module %}
+                <a href="{% url 'sgc:training' %}" class="sg-top-icon" aria-label="Ayuda y capacitacion">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.5 1.5c0 2-2 2-2 4"/><path d="M12 18h.01"/></svg>
+                </a>
+              {% endif %}
+            {% endif %}
+            {% if company.show_findings_module and can_create_findings %}
+              <a href="{% url 'findings:create' %}" class="sg-button-brand-compact md:hidden">Registrar</a>
+            {% endif %}
+            {% if user.is_authenticated %}
+              <details class="sg-top-user">
+                <summary class="sg-avatar" aria-label="Menu de usuario">{{ user.get_username|slice:":2"|upper }}</summary>
+                <div class="sg-top-user-panel">
+                  <div class="sg-top-user-info">
+                    <span class="sg-sidebar-user-avatar">{{ user.get_username|slice:":2"|upper }}</span>
+                    <span>
+                      <strong>{{ user.get_full_name|default:user.get_username }}</strong>
+                      <small>{{ user.get_username }}</small>
+                    </span>
+                  </div>
+                  <a href="{% url 'accounts:profile' %}" class="sg-top-user-logout">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+                    Ver mi perfil
+                  </a>
+                  <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="sg-top-user-logout">
+                      <svg viewBox="0 0 24 24"><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M21 3v18"/></svg>
+                      Cerrar sesion
+                    </button>
+                  </form>
+                </div>
+              </details>
+            {% endif %}
+          </div>
+        </header>
+
+        <main>
+          {% if messages %}
+            <div class="mx-auto max-w-7xl px-6 pt-6">
+              {% for message in messages %}
+                <div class="rounded border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-800">
+                  {{ message }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+          {% block content %}{% endblock %}
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

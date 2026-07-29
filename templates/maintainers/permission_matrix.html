@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Matriz de permisos | Mantenedores{% endblock %}
+
+{% block content %}
+<section class="sg-page">
+  <div class="sg-page-header">
+    <div>
+      <p class="sg-section-kicker">Mantenedores</p>
+      <h1>Matriz de permisos</h1>
+      <p>Administra que puede realizar cada rol dentro del sistema. El rol Administrador siempre mantiene acceso total.</p>
+    </div>
+    <a href="{% url 'maintainers:permission_matrix_export' %}" class="sg-button-secondary">Exportar CSV</a>
+  </div>
+
+  <form method="post" class="sg-card overflow-hidden">
+    {% csrf_token %}
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead>
+          <tr>
+            <th class="w-[32%] px-4 py-4 text-left uppercase tracking-[0.12em] text-slate-500">Permiso / actividad</th>
+            {% for role in roles %}
+              <th class="min-w-[150px] px-3 py-4 text-center uppercase tracking-[0.12em] text-slate-500" title="{{ role.description }}">
+                {{ role.name }}
+              </th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% regroup permissions by section as permission_sections %}
+          {% for section in permission_sections %}
+            <tr>
+              <td colspan="{{ roles|length|add:1 }}" class="bg-slate-50 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-blue-700">
+                {{ section.grouper }}
+              </td>
+            </tr>
+            {% for permission in section.list %}
+              <tr>
+                <td class="px-4 py-4 font-semibold text-slate-900">{{ permission.label }}</td>
+                {% for role_permission in permission.roles %}
+                  <td class="px-3 py-4 text-center">
+                    <label class="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm transition hover:border-blue-200">
+                      <input
+                        type="checkbox"
+                        name="permissions"
+                        value="{{ role_permission.role }}|{{ permission.code }}"
+                        class="h-4 w-4 rounded border-slate-300 text-blue-700 focus:ring-blue-600"
+                        {% if role_permission.allowed %}checked{% endif %}
+                        {% if role_permission.locked %}disabled{% endif %}
+                      >
+                      <span class="text-xs font-bold {% if role_permission.allowed %}text-emerald-700{% else %}text-slate-400{% endif %}">
+                        {% if role_permission.locked %}Siempre{% elif role_permission.allowed %}Si{% else %}No{% endif %}
+                      </span>
+                    </label>
+                  </td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-4 py-4">
+      <p class="text-sm text-slate-500">Los cambios se aplican inmediatamente en los menus y acciones protegidas del sitio.</p>
+      <button type="submit" class="sg-btn sg-btn-primary">Guardar permisos</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

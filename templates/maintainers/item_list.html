@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} | Mantenedores{% endblock %}
+
+{% block content %}
+<section class="sg-page">
+  <div class="sg-page-header">
+    <div>
+      <p class="sg-section-kicker">Mantenedores</p>
+      <h1>{{ title }}</h1>
+      <p>Administra los valores maestros utilizados por el Sistema de Gestion.</p>
+    </div>
+    <a href="{% url 'maintainers:create' kind %}" class="sg-button-brand">Nuevo registro</a>
+  </div>
+
+  <div class="sg-table-wrap">
+    <table class="sg-table">
+      <thead class="bg-neutral-50">
+        <tr>
+          <th>Nombre</th>
+          <th>Orden</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+          <tr class="sg-table-row">
+            <td class="font-semibold">{{ item.name }}</td>
+            <td>{{ item.order }}</td>
+            <td>
+              {% if item.is_active %}
+                <span class="sg-badge sg-badge-progress">Activo</span>
+              {% else %}
+                <span class="sg-badge sg-badge-neutral">Inactivo</span>
+              {% endif %}
+            </td>
+            <td class="text-right">
+              <a href="{% url 'maintainers:update' kind item.pk %}" class="sg-row-action">Editar</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="4" class="px-4 py-10 text-center text-neutral-500">No hay registros.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

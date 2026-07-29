@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Identidad del SGC | Mantenedores{% endblock %}
+
+{% block content %}
+<section class="sg-form-page">
+  <div class="sg-form-panel sg-form-panel-elevated">
+    <div class="mb-6">
+      <p class="sg-section-kicker">Mantenedores</p>
+      <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">Identidad del SGC</h1>
+      <p class="mt-2 text-sm leading-6 text-slate-600">
+        Administra la Politica de la Calidad, Mision y Vision que se mostraran en Inicio SGC. Si un campo queda vacio, no aparecera en el sitio.
+      </p>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+      <div class="sg-form-grid">
+        {% for field in form %}
+          <div class="sg-form-field sg-form-field-wide">
+            <label for="{{ field.id_for_label }}" class="sg-form-label">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}
+              <p class="sg-form-help">{{ field.help_text }}</p>
+            {% endif %}
+            {% for error in field.errors %}
+              <p class="sg-form-error">{{ error }}</p>
+            {% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="sg-form-actions">
+        <a href="{% url 'sgc:home' %}" class="sg-button-secondary">Cancelar</a>
+        <button type="submit" class="sg-button-primary">Guardar identidad</button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

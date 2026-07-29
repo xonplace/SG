@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Evaluacion | {{ content.title }}{% endblock %}
+
+{% block content %}
+<section class="sg-page">
+  <div class="sg-page-header">
+    <div>
+      <p class="sg-section-kicker">Evaluacion de capacitacion</p>
+      <h1>{{ content.title }}</h1>
+      <p>Administra las preguntas que debera responder el usuario para aprobar esta capacitacion.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a href="{% url 'sgc:training_detail' content.pk %}" class="sg-row-action">Volver al curso</a>
+      <a href="{% url 'sgc:training_question_create' content.pk %}" class="sg-button-brand">Nueva pregunta</a>
+    </div>
+  </div>
+
+  <section class="sg-lms-dashboard">
+    <article>
+      <span>Preguntas</span>
+      <strong>{{ questions|length }}</strong>
+      <small>Total configurado</small>
+    </article>
+    <article>
+      <span>Intentos</span>
+      <strong>{{ attempts_count }}</strong>
+      <small>Evaluaciones rendidas</small>
+    </article>
+    <article>
+      <span>Criterio</span>
+      <strong>{{ content.passing_percentage }}%</strong>
+      <small>Respuestas correctas para aprobar</small>
+    </article>
+  </section>
+
+  <div class="sg-card overflow-hidden">
+    <table class="min-w-full text-sm">
+      <thead>
+        <tr>
+          <th class="px-4 py-4 text-left uppercase tracking-[0.12em] text-slate-500">Orden</th>
+          <th class="px-4 py-4 text-left uppercase tracking-[0.12em] text-slate-500">Pregunta</th>
+          <th class="px-4 py-4 text-left uppercase tracking-[0.12em] text-slate-500">Respuesta</th>
+          <th class="px-4 py-4 text-left uppercase tracking-[0.12em] text-slate-500">Estado</th>
+          <th class="px-4 py-4 text-right uppercase tracking-[0.12em] text-slate-500">Accion</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for question in questions %}
+          <tr>
+            <td class="px-4 py-4 font-bold text-slate-950">{{ question.order }}</td>
+            <td class="px-4 py-4">
+              <strong class="block text-slate-950">{{ question.question }}</strong>
+              <small class="mt-1 block text-slate-500">A: {{ question.option_a }} | B: {{ question.option_b }}</small>
+            </td>
+            <td class="px-4 py-4 font-bold uppercase text-slate-700">{{ question.get_correct_option_display }}</td>
+            <td class="px-4 py-4">
+              {% if question.is_active %}
+                <span class="sg-badge sg-badge-progress">Activa</span>
+              {% else %}
+                <span class="sg-badge sg-badge-neutral">Inactiva</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-4">
+              <div class="flex flex-wrap justify-end gap-2">
+                <a href="{% url 'sgc:training_question_update' question.pk %}" class="sg-row-action">Editar</a>
+                <form method="post" action="{% url 'sgc:training_question_toggle' question.pk %}">
+                  {% csrf_token %}
+                  <button type="submit" class="sg-row-action">{% if question.is_active %}Desactivar{% else %}Activar{% endif %}</button>
+                </form>
+                <a href="{% url 'sgc:training_question_delete' question.pk %}" class="sg-row-action text-red-700">Eliminar</a>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5" class="px-4 py-10 text-center text-slate-500">
+              Esta capacitacion aun no tiene preguntas. Si no agregas preguntas, el usuario podra marcarla como completada manualmente.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

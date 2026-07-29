@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}{{ process.name }} | Procesos{% endblock %}
+
+{% block content %}
+<section class="sg-page">
+  <div class="sg-page-header sg-process-detail-header">
+    <div>
+      <p class="sg-section-kicker">{{ process.code }}</p>
+      <h1>{{ process.name }}</h1>
+      <div class="mt-3 flex flex-wrap gap-2">
+        <span class="sg-badge sg-badge-progress">{{ process.get_category_display }}</span>
+        {% if current_version %}
+          <span class="sg-badge sg-badge-neutral">Version vigente {{ current_version.version }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      {% if process.is_active %}
+        <a href="{% url 'sgc:processes' %}" class="sg-button-secondary">Volver</a>
+      {% else %}
+        <a href="{% url 'sgc:obsolete_processes' %}" class="sg-button-secondary">Volver</a>
+      {% endif %}
+      {% if can_manage_processes %}
+        {% if process.is_active %}
+          <a href="{% url 'sgc:process_update' process.pk %}" class="sg-button-secondary">Editar ficha</a>
+          <a href="{% url 'sgc:process_version_create' process.pk %}" class="sg-button-primary">Nueva version</a>
+          <form method="post" action="{% url 'sgc:process_mark_obsolete' process.pk %}" onsubmit="return confirm('Este proceso saldra de la lista vigente y pasara a Procesos obsoletos. ¿Continuar?');">
+            {% csrf_token %}
+            <button type="submit" class="sg-button-secondary border-red-200 text-red-700 hover:bg-red-50">Dar de baja</button>
+          </form>
+        {% else %}
+          <a href="{% url 'sgc:process_delete' process.pk %}" class="sg-button-secondary border-red-200 text-red-700 hover:bg-red-50">Eliminar definitivamente</a>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+
+  <article class="sg-card mb-5 p-4 sg-process-summary-card">
+    <dl class="sg-process-meta-grid">
+      <div class="sg-process-meta">
+        <dt class="text-neutral-500">Responsable</dt>
+        <dd class="mt-1 font-medium text-neutral-950">{{ process.owner|default:"-" }}</dd>
+      </div>
+      <div class="sg-process-meta">
+        <dt class="text-neutral-500">Estado</dt>
+        <dd class="mt-1 font-medium text-neutral-950">{% if process.is_active %}Activo{% else %}Inactivo{% endif %}</dd>
+      </div>
+      <div class="sg-process-meta">
+        <dt class="text-neutral-500">Versiones</dt>
+        <dd class="mt-1 font-medium text-neutral-950">{{ version_count }}</dd>
+      </div>
+      <div class="sg-process-meta">
+        <dt class="text-neutral-500">Tipo</dt>
+        <dd class="mt-1 font-medium text-neutral-950">{{ process.get_category_display }}</dd>
+      </div>
+    </dl>
+  </article>
+
+  <div class="space-y-6">
+    <div>
+      {% if current_version %}
+        <article class="sg-card p-5 sg-process-version-card">
+          <div class="mb-4 flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p class="sg-section-kicker">Version vigente</p>
+              <h2 class="mt-1 text-xl font-extrabold text-slate-950">{{ current_version.version }}</h2>
+              <p class="mt-1 text-xs font-medium uppercase tracking-wide text-neutral-500">Documento vigente para uso</p>
+            </div>
+            <p class="text-sm text-neutral-500">{{ current_version.published_at|date:"d-m-Y" }}</p>
+          </div>
+
+          {% if current_version.prose %}
+            <div class="mb-5">
+              <h3 class="mb-2 sg-section-title">Descripcion del proceso</h3>
+              <div class="sg-rich-text text-sm leading-7 text-neutral-700">{{ current_version.prose|urlize|linebreaksbr }}</div>
+            </div>
+          {% endif %}
+
+          <div class="mb-5" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: 1rem; align-items: start;">
+            <div>
+              <h3 class="mb-2 sg-section-title">Imagen del proceso</h3>
+              {% if current_version.process_image %}
+                <button type="button" class="sg-process-image-thumb" onclick="document.getElementById('process-image-dialog').showModal()">
+                  <img src="{{ current_version.process_image.url }}" alt="Imagen del proceso {{ process.name }}" style="height: 180px; width: 100%; object-fit: contain; padding: 0.5rem;">
+                </button>
+                <p class="mt-2 text-xs text-neutral-500">Presiona la miniatura para ampliarla.</p>
+
+                <dialog id="process-image-dialog" class="max-h-[92vh] w-[92vw] rounded-xl border border-neutral-200 bg-white p-4 shadow-2xl backdrop:bg-black/60">
+                  <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+                    <p class="font-semibold text-neutral-950">{{ process.name }} - {{ current_version.version }}</p>
+                    <div class="flex flex-wrap items-center gap-2">
+                      <button type="button" class="sg-button-compact" onclick="zoomProcessImage(0.2)">Acercar</button>
+                      <button type="button" class="sg-button-compact" onclick="zoomProcessImage(-0.2)">Alejar</button>
+                      <button type="button" class="sg-button-compact" onclick="resetProcessImageZoom()">Restablecer</button>
+                      <button type="button" class="sg-row-action" onclick="document.getElementById('process-image-dialog').close()">Cerrar</button>
+                    </div>
+                  </div>
+                  <div style="max-height: 80vh; overflow: auto; border: 1px solid #e5e5e5; background: #fafafa;">
+                    <img id="process-image-zoom" src="{{ current_version.process_image.url }}" alt="Imagen ampliada del proceso {{ process.name }}" style="width: 100%; max-width: none; transform-origin: top left;">
+                  </div>
+                </dialog>
+              {% else %}
+                <div class="flex items-center justify-center rounded-lg border border-dashed border-neutral-300 bg-neutral-50 text-sm text-neutral-500" style="height: 180px;">
+                  Sin imagen publicada
+                </div>
+              {% endif %}
+            </div>
+
+            <div>
+              <h3 class="mb-2 sg-section-title">Archivos publicados</h3>
+              <div class="grid gap-3">
+                {% if current_version.flow_file %}
+                  <a href="{% url 'sgc:download_process_file' current_version.pk 'flujo' %}" class="sg-process-file-card sg-process-file-card-primary">
+                    <p class="font-semibold text-neutral-950">Descargar flujo del proceso</p>
+                    <p class="mt-1 break-all text-xs text-neutral-500">{{ current_version.flow_filename }}</p>
+                  </a>
+                {% else %}
+                  <div class="rounded border border-dashed border-neutral-300 bg-neutral-50 p-4 text-sm text-neutral-500">
+                    Sin flujo descargable publicado.
+                  </div>
+                {% endif %}
+
+                {% if current_version.procedure_file %}
+                  <a href="{% url 'sgc:download_process_file' current_version.pk 'procedimiento' %}" class="sg-process-file-card">
+                    <p class="font-semibold text-neutral-950">Descargar procedimiento asociado</p>
+                    <p class="mt-1 break-all text-xs text-neutral-500">{{ current_version.procedure_filename }}</p>
+                  </a>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </article>
+      {% else %}
+        <article class="sg-card px-5 py-10 text-center text-sm text-neutral-500">
+          Este proceso aun no tiene una version publicada.
+        </article>
+      {% endif %}
+    </div>
+
+    <section class="sg-card p-5">
+      <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p class="sg-section-kicker">Formularios del proceso</p>
+          <h2 class="mt-1 text-xl font-extrabold text-slate-950">Formatos oficiales vinculados</h2>
+        </div>
+        <a href="{% url 'sgc:official_forms' %}?process={{ process.pk }}" class="sg-row-action shrink-0">Ver en biblioteca</a>
+      </div>
+      {% if process_forms %}
+        <div class="grid gap-3" style="grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));">
+          {% for form_item in process_forms %}
+            <a href="{% url 'sgc:download_official_form' form_item.pk %}" class="rounded-lg border border-neutral-200 bg-neutral-50 p-4 transition hover:border-[#2271b1]/40 hover:bg-white">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <p class="font-semibold text-neutral-950">{{ form_item.name }}</p>
+                  {% if form_item.code %}<p class="mt-1 text-xs text-neutral-500">{{ form_item.code }}</p>{% endif %}
+                </div>
+                <span class="sg-format-badge {{ form_item.format_badge_class }}">
+                  <span class="sg-format-icon">{{ form_item.format_icon }}</span>
+                  {{ form_item.format_label }}
+                </span>
+              </div>
+              <p class="mt-3 text-xs font-medium uppercase tracking-wide text-neutral-500">Version {{ form_item.version }}</p>
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="rounded-lg border border-dashed border-neutral-300 bg-neutral-50 p-4 text-sm text-neutral-500">
+          Este proceso aun no tiene formularios oficiales asociados.
+        </div>
+      {% endif %}
+    </section>
+
+    <details class="sg-card p-5">
+      <summary class="flex cursor-pointer items-center justify-between gap-4">
+        <div>
+          <h2 class="text-base font-semibold text-neutral-950">Historial de versiones</h2>
+          <p class="mt-1 text-sm leading-6 text-neutral-600">
+            Las versiones anteriores se conservan como trazabilidad documental. Presiona para revisar el control de cambios.
+          </p>
+        </div>
+        <span class="sg-badge sg-badge-neutral">{{ version_count }} version(es)</span>
+      </summary>
+
+      {% if can_view_version_history %}
+          <div class="mt-5 grid gap-3" style="grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));">
+            {% for version in versions %}
+              <section class="rounded border border-neutral-200 bg-neutral-50 p-4">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <p class="font-semibold text-neutral-950">{{ version.version }}</p>
+                    <p class="mt-1 text-xs text-neutral-500">{{ version.published_at|date:"d-m-Y" }}</p>
+                  </div>
+                  {% if version.is_current %}
+                    <span class="sg-badge sg-badge-progress">Vigente para uso</span>
+                  {% else %}
+                    <span class="sg-badge sg-badge-neutral">Historica - no usar</span>
+                  {% endif %}
+                </div>
+                <div class="sg-rich-text mt-3 text-sm leading-6 text-neutral-700">{{ version.change_summary|urlize|linebreaksbr }}</div>
+                {% if version.published_by %}
+                  <p class="mt-3 text-xs text-neutral-500">Publicado por {{ version.published_by }}</p>
+                {% endif %}
+                {% if version.prose or version.process_image or version.flow_file or version.procedure_file %}
+                  <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                    {% if version.prose %}
+                      <button type="button" class="rounded border border-neutral-200 bg-white px-2 py-1 text-neutral-700 hover:border-[#2271b1]" onclick="document.getElementById('process-prose-dialog-{{ version.pk }}').showModal()">
+                        Ver prosa
+                      </button>
+                      <dialog id="process-prose-dialog-{{ version.pk }}" class="max-h-[88vh] w-[min(760px,92vw)] rounded-xl border border-neutral-200 bg-white p-5 shadow-2xl backdrop:bg-black/60">
+                        <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-[#2271b1]">Prosa publicada</p>
+                            <h3 class="mt-1 text-lg font-semibold text-neutral-950">{{ process.name }} - {{ version.version }}</h3>
+                            <p class="mt-1 text-xs text-neutral-500">{{ version.published_at|date:"d-m-Y" }}</p>
+                          </div>
+                          <button type="button" class="sg-row-action" onclick="document.getElementById('process-prose-dialog-{{ version.pk }}').close()">Cerrar</button>
+                        </div>
+                        <div class="max-h-[65vh] overflow-auto rounded border border-neutral-200 bg-neutral-50 p-4">
+                          <div class="sg-rich-text text-sm leading-7 text-neutral-700">{{ version.prose|urlize|linebreaksbr }}</div>
+                        </div>
+                      </dialog>
+                    {% endif %}
+                    {% if version.process_image %}
+                      <button type="button" class="rounded border border-neutral-200 bg-white px-2 py-1 text-neutral-700 hover:border-[#2271b1]" onclick="document.getElementById('process-history-image-dialog-{{ version.pk }}').showModal()">
+                        Imagen
+                      </button>
+                      <dialog id="process-history-image-dialog-{{ version.pk }}" class="max-h-[92vh] w-[92vw] rounded-xl border border-neutral-200 bg-white p-4 shadow-2xl backdrop:bg-black/60">
+                        <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-[#2271b1]">Imagen historica</p>
+                            <h3 class="mt-1 font-semibold text-neutral-950">{{ process.name }} - {{ version.version }}</h3>
+                          </div>
+                          <button type="button" class="sg-row-action" onclick="document.getElementById('process-history-image-dialog-{{ version.pk }}').close()">Cerrar</button>
+                        </div>
+                        <div style="max-height: 80vh; overflow: auto; border: 1px solid #e5e5e5; background: #fafafa;">
+                          <img src="{{ version.process_image.url }}" alt="Imagen historica del proceso {{ process.name }} {{ version.version }}" style="width: 100%; max-width: none;">
+                        </div>
+                      </dialog>
+                    {% endif %}
+                    {% if version.flow_file %}
+                      <a href="{% url 'sgc:download_process_file' version.pk 'flujo' %}" class="rounded border border-neutral-200 bg-white px-2 py-1 text-neutral-700 hover:border-[#2271b1]">Flujo</a>
+                    {% endif %}
+                    {% if version.procedure_file %}
+                      <a href="{% url 'sgc:download_process_file' version.pk 'procedimiento' %}" class="rounded border border-neutral-200 bg-white px-2 py-1 text-neutral-700 hover:border-[#2271b1]">Procedimiento</a>
+                    {% endif %}
+                  </div>
+                {% endif %}
+              </section>
+            {% empty %}
+              <p class="text-sm text-neutral-500">Sin versiones registradas.</p>
+            {% endfor %}
+          </div>
+      {% else %}
+          <div class="mt-4 rounded border border-neutral-200 bg-neutral-50 p-4 text-sm leading-6 text-neutral-600">
+            El historial completo queda reservado para administrador y Representante de la Gerencia.
+          </div>
+      {% endif %}
+    </details>
+  </div>
+</section>
+
+<script>
+  let processImageZoom = 1;
+
+  function applyProcessImageZoom() {
+    const image = document.getElementById("process-image-zoom");
+    if (!image) return;
+    image.style.width = `${processImageZoom * 100}%`;
+  }
+
+  function zoomProcessImage(delta) {
+    processImageZoom = Math.min(4, Math.max(0.4, processImageZoom + delta));
+    applyProcessImageZoom();
+  }
+
+  function resetProcessImageZoom() {
+    processImageZoom = 1;
+    applyProcessImageZoom();
+  }
+</script>
+{% endblock %}

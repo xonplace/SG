@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Reportes | Sistema de gestion{% endblock %}
+
+{% block content %}
+<section class="sg-page">
+  <div class="sg-report-hero">
+    <div class="sg-report-hero-main">
+      <p class="sg-report-hero-kicker">Business Intelligence</p>
+      <h1>Dashboard de hallazgos</h1>
+      <p>
+        Control ejecutivo del flujo de hallazgos: volumen, estado, plazos, clasificacion y origen de las situaciones detectadas.
+      </p>
+      <div class="sg-report-hero-metrics">
+        <div>
+          <span>Total registros</span>
+          <strong>{{ metrics.total }}</strong>
+        </div>
+        <div>
+          <span>Cierre</span>
+          <strong>{{ metrics.closed_percent }}%</strong>
+        </div>
+        <div>
+          <span>Alertas plazo</span>
+          <strong>{{ metrics.due }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="sg-report-hero-health">
+      <div class="sg-report-health-header">
+        <div>
+          <p class="sg-report-hero-kicker">Estado general</p>
+          <h2>Salud operativa</h2>
+        </div>
+        <a href="{% url 'findings:list' %}" class="sg-report-link">Ver bandeja</a>
+      </div>
+      <div class="sg-report-health-grid">
+        <div class="sg-bi-donut sg-report-donut" style="--value: {{ metrics.closed_percent }}%;">
+          <div>
+            <p>{{ metrics.closed_percent }}%</p>
+            <span>cerrados</span>
+          </div>
+        </div>
+        <div class="sg-report-status-grid">
+          <article class="sg-report-status-card">
+            <span>Abiertos</span>
+            <strong>{{ metrics.open }}</strong>
+          </article>
+          <article class="sg-report-status-card sg-report-status-danger">
+            <span>Vencidos</span>
+            <strong>{{ due_data.overdue }}</strong>
+          </article>
+          <article class="sg-report-status-card sg-report-status-warning">
+            <span>Proximas 24 horas</span>
+            <strong>{{ due_data.next_24h }}</strong>
+          </article>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sg-report-summary-grid">
+    <article class="sg-report-summary-card sg-report-summary-blue">
+      <div class="sg-report-summary-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M14 3v4h4"/><path d="M9 13h6"/></svg>
+      </div>
+      <div>
+        <span>Total hallazgos</span>
+        <strong>{{ metrics.total }}</strong>
+        <small>Base de analisis</small>
+      </div>
+    </article>
+    <article class="sg-report-summary-card sg-report-summary-cyan">
+      <div class="sg-report-summary-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M4 12h16"/><path d="M12 4v16"/></svg>
+      </div>
+      <div>
+        <span>Abiertos</span>
+        <strong>{{ metrics.open }}</strong>
+        <small>{{ metrics.open_percent }}% del total</small>
+      </div>
+    </article>
+    <article class="sg-report-summary-card sg-report-summary-green">
+      <div class="sg-report-summary-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+      </div>
+      <div>
+        <span>Cerrados</span>
+        <strong>{{ metrics.closed }}</strong>
+        <small>{{ metrics.closed_percent }}% cerrado</small>
+      </div>
+    </article>
+    <article class="sg-report-summary-card sg-report-summary-purple">
+      <div class="sg-report-summary-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 8v5l3 2"/><circle cx="12" cy="12" r="9"/></svg>
+      </div>
+      <div>
+        <span>Pendientes RG</span>
+        <strong>{{ metrics.representative_pending }}</strong>
+        <small>Por revisar</small>
+      </div>
+    </article>
+    <article class="sg-report-summary-card sg-report-summary-red">
+      <div class="sg-report-summary-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+      </div>
+      <div>
+        <span>Vencidos / por vencer</span>
+        <strong>{{ metrics.due }}</strong>
+        <small>Alertas plazo</small>
+      </div>
+    </article>
+  </div>
+
+  <div class="mb-6 grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(360px,0.7fr)]">
+    <section class="sg-dashboard-card">
+      <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p class="sg-section-kicker">Flujo del hallazgo</p>
+          <h2 class="sg-section-title">Distribucion por etapa</h2>
+        </div>
+        <span class="text-xs text-neutral-500">Muestra donde se concentra la gestion actual</span>
+      </div>
+      <div class="grid gap-2 md:grid-cols-2">
+        {% for stage in stages %}
+          <div class="sg-bi-row sg-bi-row-compact">
+            <div class="flex items-center justify-between gap-3 text-sm">
+              <div class="flex min-w-0 items-center gap-3">
+                <span class="sg-bi-dot" style="background: {{ stage.color }};"></span>
+                <span class="min-w-0 truncate font-semibold text-neutral-800">{{ stage.label }}</span>
+              </div>
+              <span class="shrink-0 text-xs font-semibold text-neutral-500">{{ stage.percent }}%</span>
+            </div>
+            <div class="mt-2 grid grid-cols-[1fr_auto] items-center gap-3">
+              <div class="sg-bi-track">
+                <div class="sg-bi-bar" style="--bar-color: {{ stage.color }}; width: {{ stage.percent }}%;">
+                  <span class="sg-bi-bar-glow"></span>
+                </div>
+              </div>
+              <span class="w-16 text-right text-xs text-neutral-500">{{ stage.total }} reg.</span>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="sg-dashboard-card">
+      <p class="sg-section-kicker">Clasificacion</p>
+      <h2 class="sg-section-title mt-1">Tipo de hallazgo</h2>
+      <div class="mt-4 space-y-2">
+        {% for row in by_classification %}
+          <div class="sg-bi-row">
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex min-w-0 items-center gap-3">
+                <span class="sg-bi-dot" style="background: {{ row.color }};"></span>
+                <p class="min-w-0 truncate text-sm font-semibold text-neutral-900">{{ row.label }}</p>
+              </div>
+              <p class="shrink-0 text-lg font-semibold">{{ row.total }}</p>
+            </div>
+            <div class="sg-bi-track mt-2">
+              <div class="sg-bi-bar" style="--bar-color: {{ row.color }}; width: {{ row.percent }}%;">
+                <span class="sg-bi-bar-glow"></span>
+              </div>
+            </div>
+            <p class="mt-1 text-xs text-neutral-500">{{ row.percent }}% del total</p>
+          </div>
+        {% empty %}
+          <p class="rounded-lg border border-dashed border-neutral-300 p-4 text-sm text-neutral-500">Sin clasificaciones registradas.</p>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+
+  <div class="grid gap-4 xl:grid-cols-2">
+    {% include "findings/partials/report_table.html" with title="Por estado" rows=by_status empty_message="Sin estados registrados." %}
+    {% include "findings/partials/report_table.html" with title="Por fuente" rows=by_source empty_message="Sin fuentes registradas." %}
+    {% include "findings/partials/report_table.html" with title="Top areas" rows=by_area empty_message="Sin areas registradas." %}
+    {% include "findings/partials/report_table.html" with title="Top procesos" rows=by_process empty_message="Sin procesos registrados." %}
+  </div>
+</section>
+{% endblock %}

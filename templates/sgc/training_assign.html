@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Asignar capacitacion | {{ company.system_name }}{% endblock %}
+
+{% block content %}
+<section class="sg-page">
+  <div class="sg-page-header">
+    <div>
+      <p class="sg-section-kicker">Capacitaciones</p>
+      <h1>Asignar capacitacion</h1>
+      <p>{{ content.title }}</p>
+    </div>
+    <a href="{% url 'sgc:training' %}" class="sg-row-action">Volver</a>
+  </div>
+
+  <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+    <form method="post" class="sg-form-panel sg-form-panel-elevated">
+      {% csrf_token %}
+      <div class="sg-training-assign-head">
+        <div>
+          <p class="sg-section-kicker">Asignacion</p>
+          <h2>Usuarios que deben completar esta capacitacion</h2>
+          <p>Selecciona usuarios, define fecha limite si aplica y guarda. Si quitas un usuario, se elimina su asignacion pendiente.</p>
+        </div>
+        <span>{{ user_options|length }} usuario(s) activos</span>
+      </div>
+
+      <div class="sg-training-assign-fields">
+        {% include "findings/partials/form_field.html" with field=form.due_date %}
+        {% include "findings/partials/form_field.html" with field=form.note wide=True %}
+      </div>
+
+      <section class="sg-training-user-picker">
+        <div class="sg-training-user-picker-head">
+          <div>
+            <label for="training-user-search" class="sg-section-kicker">Usuarios asignados *</label>
+            <h3>Seleccionar participantes</h3>
+          </div>
+          <input id="training-user-search" type="search" placeholder="Buscar usuario" autocomplete="off">
+        </div>
+        {% if form.users.errors %}
+          <p class="mt-2 text-sm font-semibold text-red-600">{{ form.users.errors|join:", " }}</p>
+        {% endif %}
+        <div class="sg-training-user-grid" id="training-user-grid">
+          {% for option in user_options %}
+            <label class="sg-training-user-option {% if option.checked %}sg-training-user-option-checked{% endif %}" data-user-search="{{ option.search_text }}">
+              <input type="checkbox" name="users" value="{{ option.user.pk }}" {% if option.checked %}checked{% endif %}>
+              <span class="sg-training-user-avatar">{{ option.initials }}</span>
+              <span class="min-w-0">
+                <strong>{{ option.full_name }}</strong>
+                <small>{{ option.user.username }}{% if option.user.email %} · {{ option.user.email }}{% endif %}</small>
+                {% if option.assignment %}
+                  <em>Actualmente asignado{% if option.assignment.due_date %} · limite {{ option.assignment.due_date|date:"d-m-Y" }}{% endif %}</em>
+                {% endif %}
+              </span>
+            </label>
+          {% empty %}
+            <p class="text-sm font-semibold text-slate-500">No hay usuarios activos disponibles.</p>
+          {% endfor %}
+        </div>
+      </section>
+
+      <div class="sg-form-actions">
+        <a href="{% url 'sgc:training' %}" class="sg-button-secondary">Cancelar</a>
+        <button type="submit" class="sg-button-primary">Guardar asignaciones</button>
+      </div>
+    </form>
+
+    <aside class="sg-card p-5">
+      <p class="sg-section-kicker">Asignados actuales</p>
+      <h2 class="mt-2 text-xl font-black tracking-tight text-slate-950">{{ assignments|length }} usuario(s)</h2>
+      <div class="sg-training-assigned-list">
+        {% for assignment in assignments %}
+          <div class="sg-training-assigned-card">
+            <span>{{ assignment.user.get_full_name|default:assignment.user.username|slice:":2"|upper }}</span>
+            <div>
+              <strong>{{ assignment.user.get_full_name|default:assignment.user.username }}</strong>
+              <small>
+                {% if assignment.due_date %}
+                  Limite {{ assignment.due_date|date:"d-m-Y" }}
+                {% else %}
+                  Sin fecha limite
+                {% endif %}
+              </small>
+            </div>
+          </div>
+        {% empty %}
+          <p class="text-sm font-semibold text-slate-500">Aun no hay usuarios asignados.</p>
+        {% endfor %}
+      </div>
+    </aside>
+  </div>
+</section>
+
+<script>
+  (() => {
+    const search = document.getElementById("training-user-search");
+    const options = Array.from(document.querySelectorAll(".sg-training-user-option"));
+    if (!search || !options.length) return;
+
+    const refreshCheckedState = (option) => {
+      option.classList.toggle("sg-training-user-option-checked", option.querySelector("input")?.checked);
+    };
+
+    options.forEach((option) => {
+      const input = option.querySelector("input");
+      input?.addEventListener("change", () => refreshCheckedState(option));
+    });
+
+    search.addEventListener("input", () => {
+      const term = search.value.trim().toLowerCase();
+      options.forEach((option) => {
+        option.hidden = term && !option.dataset.userSearch.includes(term);
+      });
+    });
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Comunicados | SGC{% endblock %}
+
+{% block content %}
+<section class="sg-page">
+  <div class="sg-page-header">
+    <div>
+      <p class="sg-section-kicker">Sistema de Gestion</p>
+      <h1>Comunicados</h1>
+      <p>Comunicados internos, cambios documentales y noticias del SGC.</p>
+    </div>
+    {% if can_manage_sgc_updates %}
+      <a href="{% url 'sgc:update_create' %}" class="sg-button-brand">Nuevo comunicado</a>
+    {% endif %}
+  </div>
+
+  <div class="sg-updates-list">
+    {% for update in updates %}
+      <article class="sg-update-card sg-update-card-v2">
+        <span class="sg-update-icon">
+          <svg viewBox="0 0 24 24"><path d="M4 11v2a2 2 0 0 0 2 2h2l5 4V5l-5 4H6a2 2 0 0 0-2 2z"/><path d="M17 9a4 4 0 0 1 0 6"/><path d="M19.5 6.5a8 8 0 0 1 0 11"/></svg>
+        </span>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p class="sg-update-date">{{ update.published_at|date:"d-m-Y H:i" }}</p>
+            <h2 class="mt-2 text-xl font-extrabold text-slate-950">{{ update.title }}</h2>
+          </div>
+          <div class="flex shrink-0 flex-wrap items-center gap-2">
+            {% if update.show_on_home %}
+              <span class="sg-badge sg-badge-pending">Visible en Inicio SGC</span>
+            {% elif can_highlight_sgc_update %}
+              <form method="post" action="{% url 'sgc:update_highlight' update.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="sg-row-action">Mostrar en Inicio SGC</button>
+              </form>
+            {% endif %}
+          </div>
+        </div>
+        <p class="sg-update-body">{{ update.body }}</p>
+      </article>
+    {% empty %}
+      <div class="sg-card p-8 text-center text-sm text-neutral-500">No hay comunicados publicados.</div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

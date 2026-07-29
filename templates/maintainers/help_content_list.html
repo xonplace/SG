@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Ayuda y capacitacion | Mantenedores{% endblock %}
+
+{% block content %}
+<section class="sg-page">
+  <div class="sg-page-header">
+    <div>
+      <p class="sg-section-kicker">Mantenedores</p>
+      <h1>Ayuda y capacitacion</h1>
+      <p>Administra contenidos de apoyo, capacitaciones, videos, materiales descargables e instrucciones visibles para usuarios.</p>
+    </div>
+    <a href="{% url 'maintainers:help_content_create' %}" class="sg-button-brand">Nuevo contenido</a>
+  </div>
+
+  <div class="sg-card overflow-hidden">
+    <table class="min-w-full text-sm">
+      <thead>
+        <tr>
+          <th class="px-4 py-4 text-left uppercase tracking-[0.12em] text-slate-500">Contenido</th>
+          <th class="px-4 py-4 text-left uppercase tracking-[0.12em] text-slate-500">Seccion</th>
+          <th class="px-4 py-4 text-left uppercase tracking-[0.12em] text-slate-500">Capacitacion</th>
+          <th class="px-4 py-4 text-left uppercase tracking-[0.12em] text-slate-500">Estado</th>
+          <th class="px-4 py-4 text-right uppercase tracking-[0.12em] text-slate-500">Accion</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for item in contents %}
+          <tr>
+            <td class="px-4 py-4">
+              <strong class="block text-slate-950">{{ item.title }}</strong>
+              <small class="text-slate-500">{{ item.summary|default:"Sin resumen" }}</small>
+            </td>
+            <td class="px-4 py-4">{{ item.get_section_display }}</td>
+            <td class="px-4 py-4">
+              {% if item.show_on_training %}
+                <span class="sg-badge sg-badge-progress">{{ item.get_training_category_display }}</span>
+                {% if item.estimated_minutes %}
+                  <small class="mt-1 block text-slate-500">{{ item.estimated_minutes }} min</small>
+                {% endif %}
+              {% else %}
+                <span class="sg-badge sg-badge-neutral">No visible</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-4">
+              {% if item.is_active %}
+                <span class="sg-permission-yes">Activo</span>
+              {% else %}
+                <span class="sg-permission-no">Inactivo</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-4 text-right">
+              <div class="flex flex-wrap justify-end gap-2">
+                <a href="{% url 'maintainers:help_content_update' item.pk %}" class="sg-row-action">Editar</a>
+                {% if item.show_on_training %}
+                  {% if item.is_active %}
+                    <form method="post" action="{% url 'sgc:training_deactivate' item.pk %}">
+                      {% csrf_token %}
+                      <button type="submit" class="sg-row-action">Dar de baja</button>
+                    </form>
+                  {% else %}
+                    <form method="post" action="{% url 'sgc:training_activate' item.pk %}">
+                      {% csrf_token %}
+                      <button type="submit" class="sg-row-action">Reactivar</button>
+                    </form>
+                  {% endif %}
+                  <a href="{% url 'sgc:training_delete' item.pk %}" class="sg-row-action text-red-700">Eliminar</a>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5" class="px-4 py-10 text-center text-slate-500">Aun no hay contenidos cargados.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

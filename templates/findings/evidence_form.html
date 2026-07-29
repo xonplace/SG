@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Cargar evidencia | {{ finding.code }}{% endblock %}
+
+{% block content %}
+<section class="sg-form-page">
+  <div class="w-full">
+    <div class="sg-form-intro">
+      <p class="sg-section-kicker">{{ finding.code }}</p>
+      <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">Cargar evidencia</h1>
+      <p class="mt-3 text-sm leading-6 text-slate-600">{{ finding.description|truncatechars:140 }}</p>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="sg-form-panel sg-form-panel-elevated">
+      {% csrf_token %}
+      <div class="mb-5 rounded-xl border border-[#b9d1f2] bg-[#eef5ff] px-4 py-3 text-sm text-slate-800">
+        <p class="font-medium">Etapa detectada: {{ phase_label }}</p>
+        <p class="mt-1 text-neutral-600">La evidencia quedara asociada automaticamente a esta etapa.</p>
+      </div>
+      <div class="sg-form-grid">
+        {% include "findings/partials/form_field.html" with field=form.phase %}
+        {% include "findings/partials/form_field.html" with field=form.file %}
+        {% include "findings/partials/form_field.html" with field=form.description wide=True %}
+      </div>
+      <div class="sg-form-actions">
+        <a href="{% url 'findings:detail' finding.pk %}" class="sg-button-secondary">Cancelar</a>
+        <button type="submit" class="sg-button-primary">Guardar evidencia</button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

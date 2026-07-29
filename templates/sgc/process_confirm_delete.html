@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Eliminar proceso obsoleto | {{ process.name }}{% endblock %}
+
+{% block content %}
+<section class="sg-form-page">
+  <div class="sg-form-panel">
+    <div class="mb-6">
+      <p class="sg-danger-kicker">Eliminar proceso obsoleto</p>
+      <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">{{ process.name }}</h1>
+      <p class="mt-2 text-sm leading-6 text-slate-600">
+        Esta accion eliminara definitivamente la ficha del proceso obsoleto, sus versiones, control de cambios y archivos asociados.
+      </p>
+    </div>
+
+    <div class="sg-danger-panel">
+      <p class="font-semibold">Confirmacion requerida</p>
+      <p class="mt-1">
+        Se eliminaran {{ versions|length }} version(es) del proceso {{ process.code }}. Esta accion no se puede deshacer desde el sitio.
+      </p>
+    </div>
+
+    <dl class="mb-6 grid gap-4 text-sm md:grid-cols-2">
+      <div class="sg-confirm-meta">
+        <dt class="text-neutral-500">Codigo</dt>
+        <dd class="mt-1 font-semibold text-neutral-950">{{ process.code }}</dd>
+      </div>
+      <div class="sg-confirm-meta">
+        <dt class="text-neutral-500">Tipo</dt>
+        <dd class="mt-1 font-semibold text-neutral-950">{{ process.get_category_display }}</dd>
+      </div>
+    </dl>
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="sg-form-actions">
+        <a href="{% url 'sgc:obsolete_processes' %}" class="sg-button-secondary">Cancelar</a>
+        <button type="submit" class="sg-button-danger">
+          Aceptar y eliminar
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

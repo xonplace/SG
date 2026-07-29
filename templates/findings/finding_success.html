@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Hallazgo registrado | Sistema de gestion{% endblock %}
+
+{% block content %}
+<section class="sg-form-page">
+  <div class="w-full max-w-2xl">
+    <article class="sg-form-panel text-center">
+      <p class="sg-section-kicker">Hallazgo registrado</p>
+      <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">Gracias por reportar el hallazgo</h1>
+      <p class="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-600">
+        El Representante de la Gerencia recibira la notificacion para validar si aplica tratamiento.
+      </p>
+
+      <div class="my-8 rounded-2xl border border-[#d7dee8] bg-[#f8fbff] px-6 py-5">
+        <p class="text-sm text-neutral-500">Codigo asignado</p>
+        <p class="mt-1 text-4xl font-extrabold tracking-tight text-slate-950">{{ finding_data.code }}</p>
+        <p class="mt-3 text-sm font-medium text-neutral-700">{{ finding_data.description }}</p>
+      </div>
+
+      <p class="text-sm text-neutral-600">
+        Enviaremos las notificaciones correspondientes al correo
+        <span class="font-medium text-neutral-950">{{ finding_data.reported_by_email }}</span>.
+      </p>
+
+      <div class="sg-form-actions justify-center sm:justify-center">
+        <a href="{% url 'core:home' %}" class="sg-button-secondary">Ir al inicio</a>
+        <a href="{% url 'findings:create' %}" class="sg-button-primary">Registrar otro hallazgo</a>
+      </div>
+    </article>
+  </div>
+</section>
+{% endblock %}

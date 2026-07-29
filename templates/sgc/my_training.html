@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Mis capacitaciones | {{ company.training_label }}{% endblock %}
+
+{% block content %}
+<section class="sg-page sg-lms-page">
+  <div class="sg-page-header">
+    <div>
+      <p class="sg-section-kicker">Academia SGC</p>
+      <h1>Mis capacitaciones</h1>
+      <p>Consulta tus cursos asignados, avance, vencimientos y certificados disponibles.</p>
+    </div>
+    <a href="{% url 'sgc:training' %}" class="sg-row-action">Ver catalogo</a>
+  </div>
+
+  <section class="sg-lms-dashboard">
+    <article>
+      <span>Asignadas</span>
+      <strong>{{ assigned_count }}</strong>
+      <small>Cursos asignados</small>
+    </article>
+    <article>
+      <span>Completadas</span>
+      <strong>{{ completed_count }}</strong>
+      <small>Con evidencia de aprendizaje</small>
+    </article>
+    <article>
+      <span>Pendientes</span>
+      <strong>{{ pending_count }}</strong>
+      <small>Por completar</small>
+    </article>
+    <article>
+      <span>Avance</span>
+      <strong>{{ average_progress }}%</strong>
+      <small>Promedio personal</small>
+    </article>
+  </section>
+
+  <section class="sg-card overflow-hidden">
+    <div class="border-b border-slate-100 px-5 py-4">
+      <p class="sg-section-kicker">Plan asignado</p>
+      <h2 class="mt-1 text-xl font-black tracking-tight text-slate-950">Capacitaciones del usuario</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead>
+          <tr>
+            <th class="px-5 py-4 text-left uppercase tracking-[0.12em] text-slate-500">Curso</th>
+            <th class="px-5 py-4 text-left uppercase tracking-[0.12em] text-slate-500">Fecha limite</th>
+            <th class="px-5 py-4 text-left uppercase tracking-[0.12em] text-slate-500">Avance</th>
+            <th class="px-5 py-4 text-left uppercase tracking-[0.12em] text-slate-500">Estado</th>
+            <th class="px-5 py-4 text-right uppercase tracking-[0.12em] text-slate-500">Accion</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for row in rows %}
+            <tr>
+              <td class="px-5 py-4">
+                <strong class="block text-slate-950">{{ row.content.title }}</strong>
+                <small class="text-slate-500">{{ row.content.get_training_category_display }}{% if row.content.estimated_minutes %} · {{ row.content.estimated_minutes }} min{% endif %}</small>
+              </td>
+              <td class="px-5 py-4">
+                {% if row.assignment.due_date %}
+                  <span class="{% if row.is_overdue %}font-bold text-red-700{% else %}text-slate-700{% endif %}">{{ row.assignment.due_date|date:"d-m-Y" }}</span>
+                {% else %}
+                  <span class="text-slate-400">Sin fecha</span>
+                {% endif %}
+              </td>
+              <td class="px-5 py-4">
+                <div class="sg-training-row-progress" style="--training-progress: {{ row.progress }}%;">
+                  <span></span>
+                </div>
+                <small class="mt-1 block font-bold text-slate-600">{{ row.progress }}%</small>
+              </td>
+              <td class="px-5 py-4">
+                {% if row.completion %}
+                  <span class="sg-badge sg-badge-success">Completada</span>
+                {% elif row.is_overdue %}
+                  <span class="sg-badge sg-badge-danger">Vencida</span>
+                {% elif row.last_attempt %}
+                  <span class="sg-badge sg-badge-warning">En progreso</span>
+                {% else %}
+                  <span class="sg-badge sg-badge-progress">Asignada</span>
+                {% endif %}
+              </td>
+              <td class="px-5 py-4 text-right">
+                <div class="flex flex-wrap justify-end gap-2">
+                  <a href="{% url 'sgc:training_detail' row.content.pk %}" class="sg-row-action">Abrir</a>
+                  {% if row.completion %}
+                    <a href="{% url 'sgc:training_certificate' row.content.pk %}" class="sg-button-brand-compact">Certificado</a>
+                  {% else %}
+                    <span class="sg-row-action sg-row-action-disabled">Certificado pendiente</span>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5" class="px-5 py-12 text-center">
+                <strong class="block text-slate-700">No tienes capacitaciones asignadas.</strong>
+                <span class="mt-1 block text-sm text-slate-500">Los cursos generales siguen disponibles desde el catalogo.</span>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section>
+{% endblock %}

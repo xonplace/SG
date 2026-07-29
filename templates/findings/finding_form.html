@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}Registrar hallazgo | Sistema de gestion{% endblock %}
+
+{% block content %}
+<section class="sg-form-page">
+  <div class="w-full">
+    <div class="sg-form-intro">
+      <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div>
+          <p class="sg-section-kicker">Nuevo hallazgo</p>
+          <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">Registrar hallazgo</h1>
+          <p class="mt-3 text-sm leading-6 text-slate-600">Completa la informacion inicial para que el Representante de la Gerencia pueda validar el hallazgo.</p>
+        </div>
+        <button type="button" class="sg-help-button" onclick="document.getElementById('finding-help-dialog').showModal()">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.5 1.5c0 2-2 2-2 4"/><path d="M12 18h.01"/></svg>
+          Ayuda del proceso
+        </button>
+      </div>
+    </div>
+
+    <dialog id="finding-help-dialog" class="sg-help-dialog">
+      <div class="sg-help-dialog-shell">
+        <div class="sg-help-hero">
+          <div>
+            <p class="sg-section-kicker text-white/80">Guia rapida</p>
+            <h2>Tratamiento de hallazgos</h2>
+            <p>
+              El hallazgo inicia con tu reporte y luego sigue un flujo controlado:
+              validacion, clasificacion, tratamiento, seguimiento y cierre con
+              responsables, plazos y evidencia.
+            </p>
+          </div>
+          <button type="button" class="sg-help-close" onclick="document.getElementById('finding-help-dialog').close()">Cerrar</button>
+        </div>
+
+        <div class="sg-help-content">
+          <section class="sg-help-panel">
+            <div>
+              <p class="sg-section-kicker">Que debes registrar</p>
+              <h3>Describe una situacion verificable</h3>
+              <p>
+                Escribe que ocurrio, donde se detecto, fecha, area o proceso involucrado,
+                fuente del hallazgo y evidencia objetiva. Si cuentas con un respaldo,
+                adjuntalo para facilitar la revision.
+              </p>
+            </div>
+            <div class="sg-help-illustration" aria-hidden="true">
+              <svg viewBox="0 0 280 170">
+                <rect x="26" y="24" width="150" height="122" rx="18" fill="#eef5ff"/>
+                <rect x="48" y="48" width="108" height="12" rx="6" fill="#2f62c9"/>
+                <rect x="48" y="75" width="84" height="9" rx="4.5" fill="#9dbced"/>
+                <rect x="48" y="96" width="110" height="9" rx="4.5" fill="#c8d9f6"/>
+                <rect x="48" y="117" width="72" height="9" rx="4.5" fill="#c8d9f6"/>
+                <circle cx="206" cy="58" r="28" fill="#dbeafe"/>
+                <path d="M196 58l7 7 15-17" fill="none" stroke="#2563eb" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+                <rect x="188" y="106" width="58" height="18" rx="9" fill="#1f4f91"/>
+              </svg>
+            </div>
+          </section>
+
+          <section>
+            <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p class="sg-section-kicker">Flujo del proceso</p>
+                <h3 class="sg-help-section-title">Que ocurre despues de guardar</h3>
+              </div>
+              <span class="sg-help-chip">Trazabilidad + plazos + evidencia</span>
+            </div>
+            <div class="sg-help-flow">
+              <article>
+                <span>1</span>
+                <strong>Registro</strong>
+                <p>El colaborador informa una situacion verificable. El sistema genera un codigo H y avisa al Representante de la Gerencia.</p>
+              </article>
+              <article>
+                <span>2</span>
+                <strong>Validacion</strong>
+                <p>El Representante define si aplica tratamiento. Si aplica, clasifica como No Conformidad u Oportunidad de Mejora; si no aplica, cierra con justificacion.</p>
+              </article>
+              <article>
+                <span>3</span>
+                <strong>Asignacion</strong>
+                <p>Si es No Conformidad, asigna responsable de correccion. Si es Oportunidad de Mejora, asigna responsable del plan de accion.</p>
+              </article>
+              <article>
+                <span>4</span>
+                <strong>Tratamiento</strong>
+                <p>En una NC se registra correccion, causa raiz y accion correctiva. En una OM se propone el plan de accion para implementar la mejora.</p>
+              </article>
+              <article>
+                <span>5</span>
+                <strong>Seguimiento</strong>
+                <p>El responsable asignado verifica la eficacia o resultado del tratamiento, registra criterio, observaciones y evidencia.</p>
+              </article>
+              <article>
+                <span>6</span>
+                <strong>Cierre</strong>
+                <p>El Representante revisa conformidad y evidencia. Si esta conforme, cierra; si no, devuelve la etapa con observaciones.</p>
+              </article>
+            </div>
+          </section>
+
+          <section class="sg-help-grid">
+            <article>
+              <div class="sg-help-icon">
+                <svg viewBox="0 0 24 24"><path d="M12 3l8 4v6c0 5-3.4 7.7-8 9-4.6-1.3-8-4-8-9V7z"/><path d="M9 12l2 2 4-5"/></svg>
+              </div>
+              <h4>Representante de la Gerencia</h4>
+              <p>Valida si el hallazgo aplica, clasifica como NC u OM, asigna responsables, revisa entregables y decide el cierre.</p>
+            </article>
+            <article>
+              <div class="sg-help-icon">
+                <svg viewBox="0 0 24 24"><path d="M4 12h16"/><path d="M12 4v16"/><path d="M7 7l10 10"/><path d="M17 7L7 17"/></svg>
+              </div>
+              <h4>No conformidad</h4>
+              <p>Requiere controlar el efecto detectado, analizar causa raiz, definir accion correctiva y verificar eficacia.</p>
+            </article>
+            <article>
+              <div class="sg-help-icon">
+                <svg viewBox="0 0 24 24"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-6"/></svg>
+              </div>
+              <h4>Oportunidad de mejora</h4>
+              <p>Requiere proponer un plan de accion, revisarlo, implementarlo y verificar que la mejora fue efectiva.</p>
+            </article>
+          </section>
+
+          <section>
+            <div class="mb-4">
+              <p class="sg-section-kicker">Roles que participan</p>
+              <h3 class="sg-help-section-title">Quien hace cada fase</h3>
+            </div>
+            <div class="sg-help-role-grid">
+              <article>
+                <span class="sg-help-role-number">A</span>
+                <div>
+                  <h4>Responsable de correccion</h4>
+                  <p>Participa cuando el hallazgo es una No Conformidad. Ejecuta la accion inmediata para corregir o contener la situacion detectada, registra lo realizado y sube evidencia.</p>
+                </div>
+              </article>
+              <article>
+                <span class="sg-help-role-number">B</span>
+                <div>
+                  <h4>Responsable de accion correctiva</h4>
+                  <p>Participa en No Conformidades. Analiza causa raiz usando 5 Por Que u otro metodo, documenta la conclusion y define la accion para evitar recurrencia.</p>
+                </div>
+              </article>
+              <article>
+                <span class="sg-help-role-number">C</span>
+                <div>
+                  <h4>Responsable del seguimiento</h4>
+                  <p>Verifica la eficacia o resultado del tratamiento en el plazo definido, registra tecnica, criterio, observaciones y evidencia de la medicion realizada.</p>
+                </div>
+              </article>
+              <article>
+                <span class="sg-help-role-number">RG</span>
+                <div>
+                  <h4>Representante de la Gerencia</h4>
+                  <p>Coordina el flujo completo: valida, clasifica, asigna responsables, revisa entregables y aprueba o devuelve cada etapa con observaciones.</p>
+                </div>
+              </article>
+              <article>
+                <span class="sg-help-role-number">OM</span>
+                <div>
+                  <h4>Responsable de oportunidad de mejora</h4>
+                  <p>Propone el plan de accion de la mejora, registra recursos, medio de verificacion y evidencia para que el Representante pueda aprobarlo.</p>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="sg-help-tips">
+            <h3>Consejos para completar el formulario</h3>
+            <ul>
+              <li>Describe hechos, no opiniones. Ejemplo: "se detecto diferencia entre guia y entrega".</li>
+              <li>Selecciona la fuente correcta: reclamo, auditoria, deteccion interna u otra.</li>
+              <li>Adjunta respaldo si tienes: correo, imagen, documento, ticket o registro.</li>
+              <li>No necesitas definir la causa raiz ni el plan de accion en este formulario; eso se realiza despues si el hallazgo aplica.</li>
+              <li>Si una etapa es observada por el Representante, vuelve al responsable asignado para corregirla y dejar nueva evidencia.</li>
+            </ul>
+          </section>
+        </div>
+      </div>
+    </dialog>
+
+    <form method="post" enctype="multipart/form-data" class="sg-form-panel sg-form-panel-elevated">
+      {% csrf_token %}
+
+      <fieldset class="mb-8">
+        <legend class="mb-4 w-full border-b border-neutral-200 pb-3 sg-section-title">Datos del hallazgo</legend>
+        <div class="sg-form-grid">
+          {% include "findings/partials/form_field.html" with field=form.description wide=True %}
+          {% include "findings/partials/form_field.html" with field=form.detection_date %}
+          {% include "findings/partials/form_field.html" with field=form.source %}
+          {% include "findings/partials/form_field.html" with field=form.source_other %}
+          {% include "findings/partials/form_field.html" with field=form.area %}
+          {% include "findings/partials/form_field.html" with field=form.process %}
+          {% include "findings/partials/form_field.html" with field=form.process_other %}
+          {% include "findings/partials/form_field.html" with field=form.objective_evidence wide=True %}
+          {% include "findings/partials/form_field.html" with field=form.evidence_file wide=True %}
+        </div>
+      </fieldset>
+
+      <fieldset class="mb-8">
+        <legend class="mb-4 w-full border-b border-neutral-200 pb-3 sg-section-title">Datos del informante</legend>
+        <div class="sg-form-grid">
+          {% include "findings/partials/form_field.html" with field=form.reported_by_name %}
+          {% include "findings/partials/form_field.html" with field=form.reported_by_email %}
+          {% include "findings/partials/form_field.html" with field=form.reported_by_position wide=True %}
+        </div>
+      </fieldset>
+
+      <div class="sg-form-actions">
+        <a href="{% url 'core:home' %}" class="sg-button-secondary">Cancelar</a>
+        <button type="submit" class="sg-button-primary">Guardar hallazgo</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<script>
+  function toggleField(fieldName, show) {
+    const field = document.querySelector(`[data-field-name="${fieldName}"]`);
+    if (field) field.classList.toggle("hidden", !show);
+  }
+
+  function updateFindingFields() {
+    const process = document.querySelector("#id_process");
+    const source = document.querySelector("#id_source");
+    toggleField("process_other", process && process.value === "Otro");
+    toggleField("source_other", source && source.value === "otro");
+  }
+
+  document.addEventListener("change", updateFindingFields);
+  document.addEventListener("DOMContentLoaded", updateFindingFields);
+</script>
+{% endblock %}

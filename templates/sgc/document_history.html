@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Ficha maestra documental | SGC{% endblock %}
+
+{% block content %}
+<section class="sg-page">
+  <div class="sg-page-header">
+    <div>
+      <p class="sg-section-kicker">Control documental</p>
+      <h1>Ficha maestra documental</h1>
+      <p>Trazabilidad de versiones, vigencia, reemplazos y eventos para {{ document.code|default:document.title }}.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a href="{% url 'sgc:document_matrix' %}" class="sg-button-secondary">Volver matriz</a>
+      <a href="{% url 'sgc:documents' %}" class="sg-button-secondary">Volver biblioteca</a>
+      {% if can_manage_documents %}
+        <a href="{% url 'sgc:document_edit_metadata' document.pk %}" class="sg-button-secondary">Editar metadatos</a>
+      {% endif %}
+      {% if can_manage_documents and document.status == "publicado" %}
+        <a href="{% url 'sgc:document_new_version' document.pk %}" class="sg-button-primary">Nueva version</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <article class="sg-card mb-5 overflow-hidden">
+    <div class="grid gap-0 lg:grid-cols-[1fr_320px]">
+      <div class="p-6">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="sg-badge {% if document.status == 'publicado' %}sg-badge-progress{% elif document.status == 'obsoleto' %}sg-badge-attention{% else %}sg-badge-neutral{% endif %}">
+            {{ document.get_status_display }}
+          </span>
+          <span class="sg-format-badge {{ document.format_badge_class }}" title="{{ document.file_filename }}">
+            <span class="sg-format-icon">{{ document.format_icon }}</span>
+            {{ document.format_label }}
+          </span>
+        </div>
+        <p class="mt-5 text-xs font-black uppercase tracking-[0.18em] text-blue-700">{{ document.document_type_label }}</p>
+        <h2 class="mt-2 text-3xl font-black tracking-tight text-slate-950">{{ document.title }}</h2>
+        <p class="mt-3 max-w-4xl text-sm leading-6 text-slate-600">{{ document.summary|default:"Sin resumen registrado." }}</p>
+      </div>
+      <div class="border-t border-slate-200 bg-slate-50 p-6 lg:border-l lg:border-t-0">
+        <p class="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Acceso al archivo</p>
+        <p class="mt-3 break-words text-sm font-semibold text-slate-800">{{ document.file_filename }}</p>
+        <div class="mt-5 flex flex-wrap gap-2">
+          <a href="{% url 'sgc:view_document' document.pk %}" target="_blank" rel="noopener" class="sg-document-action sg-document-action-primary">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="3"/></svg>
+            Ver
+          </a>
+          <a href="{% url 'sgc:download_document' document.pk %}" class="sg-document-action">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+            Descargar
+          </a>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <section class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+    <div class="grid gap-5">
+      <section class="sg-card p-5">
+        <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p class="sg-section-kicker">Datos controlados</p>
+            <h2 class="mt-1 text-xl font-black text-slate-950">Identificacion documental</h2>
+          </div>
+          <span class="sg-badge sg-badge-neutral">{{ versions|length }} version(es)</span>
+        </div>
+        <dl class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <div class="sg-confirm-meta">
+            <dt class="text-sm text-neutral-500">Codigo</dt>
+            <dd class="mt-1 font-semibold text-neutral-950">{{ document.code|default:"Sin codigo" }}</dd>
+          </div>
+          <div class="sg-confirm-meta">
+            <dt class="text-sm text-neutral-500">Version actual</dt>
+            <dd class="mt-1 font-semibold text-neutral-950">{{ document.version|default:"Sin version" }}</dd>
+          </div>
+          <div class="sg-confirm-meta">
+            <dt class="text-sm text-neutral-500">Vigencia</dt>
+            <dd class="mt-1 font-semibold text-neutral-950">{{ document.effective_date|date:"d-m-Y"|default:"Sin fecha" }}</dd>
+          </div>
+          <div class="sg-confirm-meta">
+            <dt class="text-sm text-neutral-500">Clausula</dt>
+            <dd class="mt-1 font-semibold text-neutral-950">{{ document.get_clause_display }}</dd>
+          </div>
+          <div class="sg-confirm-meta">
+            <dt class="text-sm text-neutral-500">Proceso asociado</dt>
+            <dd class="mt-1 font-semibold text-neutral-950">{{ document.process|default:"No aplica / no informado" }}</dd>
+          </div>
+          <div class="sg-confirm-meta">
+            <dt class="text-sm text-neutral-500">Fecha carga</dt>
+            <dd class="mt-1 font-semibold text-neutral-950">{{ document.created_at|date:"d-m-Y H:i" }}</dd>
+          </div>
+          <div class="sg-confirm-meta">
+            <dt class="text-sm text-neutral-500">Cargado por</dt>
+            <dd class="mt-1 font-semibold text-neutral-950">{{ document.uploaded_by|default:"-" }}</dd>
+          </div>
+          <div class="sg-confirm-meta">
+            <dt class="text-sm text-neutral-500">Familia documental</dt>
+            <dd class="mt-1 break-words text-xs font-semibold text-neutral-950">{{ document.document_key }}</dd>
+          </div>
+          {% if document.status == "obsoleto" %}
+            <div class="sg-confirm-meta">
+              <dt class="text-sm text-neutral-500">Fecha baja</dt>
+              <dd class="mt-1 font-semibold text-neutral-950">{{ document.obsolete_at|date:"d-m-Y H:i"|default:"-" }}</dd>
+            </div>
+            <div class="sg-confirm-meta">
+              <dt class="text-sm text-neutral-500">Dado de baja por</dt>
+              <dd class="mt-1 font-semibold text-neutral-950">{{ document.obsolete_by|default:"-" }}</dd>
+            </div>
+            <div class="sg-confirm-meta sm:col-span-2 xl:col-span-3">
+              <dt class="text-sm text-neutral-500">Motivo de baja / reemplazo</dt>
+              <dd class="mt-1 font-semibold text-neutral-950">{{ document.obsolete_reason|default:"-" }}</dd>
+            </div>
+          {% endif %}
+        </dl>
+      </section>
+
+      <section class="sg-card overflow-hidden">
+        <div class="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
+          <div>
+            <p class="sg-section-kicker">Versiones</p>
+            <h2 class="mt-1 text-xl font-black text-slate-950">Historial de versiones</h2>
+            <p class="mt-1 text-sm text-slate-600">Solo la version publicada debe utilizarse como documento vigente.</p>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="sg-table min-w-[920px]">
+            <thead class="bg-neutral-50">
+              <tr>
+                <th>Version</th>
+                <th>Estado</th>
+                <th>Vigencia</th>
+                <th>Fecha carga</th>
+                <th>Baja / reemplazo</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for version in versions %}
+                <tr class="sg-table-row">
+                  <td>
+                    <p class="font-black text-slate-950">{{ version.version|default:"Sin version" }}</p>
+                    <p class="mt-1 text-xs text-slate-500">{{ version.code|default:"Sin codigo" }}</p>
+                  </td>
+                  <td>
+                    <span class="sg-badge {% if version.status == 'publicado' %}sg-badge-progress{% elif version.status == 'obsoleto' %}sg-badge-attention{% else %}sg-badge-neutral{% endif %}">
+                      {{ version.get_status_display }}
+                    </span>
+                  </td>
+                  <td>{{ version.effective_date|date:"d-m-Y"|default:"-" }}</td>
+                  <td>{{ version.created_at|date:"d-m-Y H:i" }}</td>
+                  <td>
+                    {% if version.status == "obsoleto" %}
+                      <p class="text-sm font-semibold text-slate-900">{{ version.obsolete_at|date:"d-m-Y H:i"|default:"-" }}</p>
+                      <p class="mt-1 max-w-xs text-xs leading-5 text-slate-500">{{ version.obsolete_reason|default:"Sin motivo registrado." }}</p>
+                    {% else %}
+                      <span class="text-sm text-slate-500">Vigente para uso</span>
+                    {% endif %}
+                  </td>
+                  <td class="sg-document-actions-cell">
+                    <div class="sg-document-actions">
+                      <a href="{% url 'sgc:view_document' version.pk %}" target="_blank" rel="noopener" class="sg-document-action sg-document-action-primary">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="3"/></svg>
+                        Ver
+                      </a>
+                      <a href="{% url 'sgc:download_document' version.pk %}" class="sg-document-action">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+                        Descargar
+                      </a>
+                      {% if can_manage_documents and version.status == "publicado" %}
+                        <a href="{% url 'sgc:document_new_version' version.pk %}" class="sg-document-action sg-document-action-accent">
+                          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                          Version
+                        </a>
+                      {% endif %}
+                    </div>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="6" class="px-4 py-10 text-center text-neutral-500">No hay versiones registradas para este documento.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    {% if can_manage_documents %}
+      <aside class="sg-card overflow-hidden">
+        <div class="border-b border-slate-200 px-5 py-4">
+          <p class="sg-section-kicker">Auditoria documental</p>
+          <h2 class="mt-1 text-xl font-black text-slate-950">Eventos</h2>
+          <p class="mt-1 text-sm text-slate-600">Registro permanente de acciones sobre esta familia documental.</p>
+        </div>
+        <div class="max-h-[760px] divide-y divide-slate-200 overflow-y-auto">
+          {% for event in events %}
+            <article class="px-5 py-4">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="sg-badge {% if event.event_type == 'publicado' or event.event_type == 'restaurado' %}sg-badge-progress{% elif event.event_type == 'baja' or event.event_type == 'reemplazado' %}sg-badge-attention{% else %}sg-badge-neutral{% endif %}">
+                  {{ event.get_event_type_display }}
+                </span>
+                <span class="text-xs font-semibold text-slate-500">{{ event.created_at|date:"d-m-Y H:i" }}</span>
+              </div>
+              <p class="mt-3 font-semibold text-slate-900">
+                {{ event.document_label }}{% if event.version %} · {{ event.version }}{% endif %}
+              </p>
+              {% if event.detail %}<p class="mt-2 text-sm leading-6 text-slate-600">{{ event.detail }}</p>{% endif %}
+              <p class="mt-2 text-xs font-semibold text-slate-500">{{ event.performed_by|default:"Usuario eliminado" }}</p>
+            </article>
+          {% empty %}
+            <p class="px-5 py-8 text-center text-sm text-slate-500">Aun no existen eventos registrados para este documento.</p>
+          {% endfor %}
+        </div>
+      </aside>
+    {% endif %}
+  </section>
+</section>
+{% endblock %}

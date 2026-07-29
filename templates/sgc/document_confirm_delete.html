@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Eliminar documento obsoleto | SGC{% endblock %}
+
+{% block content %}
+<section class="sg-form-page">
+  <article class="sg-form-panel">
+    <div class="mb-6">
+      <p class="sg-danger-kicker">Eliminar documento obsoleto</p>
+      <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">{{ document.title }}</h1>
+      <p class="mt-2 text-sm leading-6 text-slate-600">
+        Esta accion eliminara definitivamente el registro y el archivo asociado. Solo debe usarse cuando ya no se requiera conservar trazabilidad desde el sitio.
+      </p>
+    </div>
+
+    <div class="sg-danger-panel">
+      <p class="font-semibold">Confirmacion requerida</p>
+      <p class="mt-1">El documento esta marcado como obsoleto. Al eliminarlo no podra recuperarse desde el sistema.</p>
+    </div>
+
+    <dl class="mb-6 grid gap-3 sm:grid-cols-2">
+      <div class="sg-confirm-meta">
+        <dt class="text-sm text-neutral-500">Codigo</dt>
+        <dd class="mt-1 font-semibold text-neutral-950">{{ document.code|default:"-" }}</dd>
+      </div>
+      <div class="sg-confirm-meta">
+        <dt class="text-sm text-neutral-500">Version</dt>
+        <dd class="mt-1 font-semibold text-neutral-950">{{ document.version|default:"-" }}</dd>
+      </div>
+      <div class="sg-confirm-meta">
+        <dt class="text-sm text-neutral-500">Clausula</dt>
+        <dd class="mt-1 font-semibold text-neutral-950">{{ document.get_clause_display }}</dd>
+      </div>
+      <div class="sg-confirm-meta">
+        <dt class="text-sm text-neutral-500">Formato</dt>
+        <dd class="mt-1 font-semibold text-neutral-950">{{ document.format_label }}</dd>
+      </div>
+    </dl>
+
+    <form method="post" class="sg-form-actions">
+      {% csrf_token %}
+      <a href="{% url 'sgc:obsolete_documents' %}" class="sg-button-secondary">Cancelar</a>
+      <button type="submit" class="sg-button-danger">
+        Eliminar definitivamente
+      </button>
+    </form>
+  </article>
+</section>
+{% endblock %}
