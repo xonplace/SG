@@ -62,9 +62,9 @@ Valores minimos a ajustar:
 ```env
 DJANGO_SECRET_KEY=clave-segura-generada
 DJANGO_DEBUG=False
-DJANGO_ALLOWED_HOSTS=192.168.0.106,sgc.tecnodata.local
-DJANGO_CSRF_TRUSTED_ORIGINS=http://192.168.0.106,http://sgc.tecnodata.local
-DJANGO_HEALTHCHECK_HOST=192.168.0.106
+DJANGO_ALLOWED_HOSTS=sg.tecnodatasa.cl,192.168.0.106
+DJANGO_CSRF_TRUSTED_ORIGINS=https://sg.tecnodatasa.cl,http://192.168.0.106
+DJANGO_HEALTHCHECK_HOST=sg.tecnodatasa.cl
 POSTGRES_PASSWORD=password-seguro
 DATABASE_URL=postgres://sistema_gestion:password-seguro@db:5432/sistema_gestion
 ```
@@ -78,7 +78,7 @@ openssl rand -hex 32
 Si TI habilita HTTPS desde el inicio, ajustar tambien:
 
 ```env
-DJANGO_CSRF_TRUSTED_ORIGINS=https://sgc.tecnodata.local,https://192.168.0.106
+DJANGO_CSRF_TRUSTED_ORIGINS=https://sg.tecnodatasa.cl
 DJANGO_SECURE_SSL_REDIRECT=True
 DJANGO_SESSION_COOKIE_SECURE=True
 DJANGO_CSRF_COOKIE_SECURE=True
@@ -133,6 +133,19 @@ Puertos esperados:
 - `5432`: no debe estar publicado hacia la red.
 - `8000`: solo interno entre Nginx y Django.
 
+## 4.2. Credenciales que deben quedar definidas antes de produccion
+
+Antes de la puesta en marcha, definir y guardar en un repositorio seguro de TI o bóveda de credenciales:
+
+- `DJANGO_SECRET_KEY`: clave secreta larga y aleatoria, unica para produccion.
+- `POSTGRES_PASSWORD`: contraseña robusta para el usuario PostgreSQL `sistema_gestion`.
+- `DATABASE_URL`: debe usar exactamente la misma contraseña definida en `POSTGRES_PASSWORD`.
+- Superusuario inicial de Django: usuario administrador del portal, creado con `createsuperuser`.
+- Credenciales SMTP/Office 365: necesarias cuando se activen alertas reales por correo.
+- Credenciales SSH de la MV: deben quedar bajo control de TI y rotarse si fueron compartidas temporalmente.
+
+No subir nunca estas claves a GitHub. Solo se guardan en `.env.production` dentro de la MV.
+
 ## 5. Dejar solo Hallazgos activo
 
 Cuando el sistema este levantado, configurar el perfil de empresa para ocultar los modulos no productivos:
@@ -153,7 +166,8 @@ docker compose -f docker-compose.prod.yml exec web python manage.py configure_fi
 
 Probar desde un equipo de la red:
 
-- Abrir `http://192.168.0.106`.
+- Abrir `https://sg.tecnodatasa.cl` si HTTPS ya esta activo.
+- Alternativamente, probar `http://192.168.0.106` mientras TI habilita DNS/certificado.
 - Iniciar sesion.
 - Crear hallazgo.
 - Validar hallazgo como Representante de la Gerencia.
@@ -183,7 +197,8 @@ docker compose -f docker-compose.prod.yml exec db pg_dump -U sistema_gestion sis
 ## 8. Pendientes posteriores
 
 - Configurar DNS interno.
-- Configurar HTTPS.
+- Configurar DNS `sg.tecnodatasa.cl` apuntando a `192.168.0.106`.
+- Configurar HTTPS para `sg.tecnodatasa.cl`.
 - Activar SMTP/Office 365 para alertas reales.
 - Evaluar SSO Microsoft Entra ID.
 - Definir rutina formal de cambios con GitHub.
