@@ -1,5 +1,6 @@
 from django import forms
 
+from apps.accounts.forms import ROLE_DESCRIPTIONS, ROLE_GROUPS, ensure_role_groups
 from apps.core.models import AuthenticationSettings, CompanyProfile, NotificationSettings, SystemHelpContent
 from apps.findings.models import DeadlineSetting, MasterArea, MasterProcess, MasterSource
 from apps.sgc.models import SgcDocumentType
@@ -379,6 +380,7 @@ class NotificationSettingsForm(StyledMaintainerForm):
 
 
 class AuthenticationSettingsForm(StyledMaintainerForm):
+    default_role = forms.ChoiceField(label="Rol por defecto para usuarios nuevos", required=False)
     client_secret = forms.CharField(
         label="Client Secret",
         required=False,
@@ -422,6 +424,10 @@ class AuthenticationSettingsForm(StyledMaintainerForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        ensure_role_groups()
+        self.fields["default_role"].choices = [("", "Sin rol por defecto")] + [
+            (role, f"{role} - {ROLE_DESCRIPTIONS.get(role, '')}") for role in ROLE_GROUPS
+        ]
         if self.instance and self.instance.has_client_secret:
             self.fields["client_secret"].help_text = "Client Secret configurado. Dejar vacio para conservarlo."
 
