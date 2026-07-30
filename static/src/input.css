@@ -2862,6 +2862,14 @@
     filter: brightness(0.96);
   }
 
+  .sg-site-credit {
+    @apply px-6 pb-5 pt-2 text-center text-[11px] font-medium tracking-[0.08em] text-slate-400/80;
+  }
+
+  .sg-public-credit {
+    @apply absolute bottom-5 left-1/2 z-10 -translate-x-1/2 text-center text-[11px] font-medium tracking-[0.08em] text-white/45;
+  }
+
   @media (max-width: 1024px) {
     .sg-certificate-layout {
       grid-template-columns: 1fr;
