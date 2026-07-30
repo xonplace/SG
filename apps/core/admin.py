@@ -146,8 +146,11 @@ class NotificationSettingsAdmin(admin.ModelAdmin):
         "notify_assignments",
         "notify_due_24h",
         "sender_email",
+        "smtp_host",
+        "smtp_username",
         "updated_at",
     )
+    readonly_fields = ("smtp_password_encrypted",)
 
 
 @admin.register(AuthenticationSettings)
@@ -157,10 +160,13 @@ class AuthenticationSettingsAdmin(admin.ModelAdmin):
         "sso_enabled",
         "provider",
         "allowed_domain",
+        "client_id",
+        "tenant_id",
         "auto_create_users",
         "force_sso_for_internal_users",
         "updated_at",
     )
+    readonly_fields = ("client_secret_encrypted",)
 
 
 @admin.register(TrainingCompletion)

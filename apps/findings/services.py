@@ -2,10 +2,10 @@ from datetime import datetime, time, timedelta
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.mail import send_mail
 from django.db.models import Q
 from django.utils import timezone
 
+from apps.core.emailing import send_notification_email
 from apps.core.models import NotificationSettings
 
 from .models import Finding, FindingHistory, Holiday
@@ -142,12 +142,7 @@ def notify_new_finding(finding):
     recipients = list(dict.fromkeys(email for email in recipients if email))
     if not recipients:
         return 0
-    from_email = (
-        f"{notification_settings.sender_name} <{notification_settings.sender_email}>"
-        if notification_settings.sender_email
-        else settings.DEFAULT_FROM_EMAIL
-    )
-    return send_mail(
+    return send_notification_email(
         subject=f"Nuevo hallazgo {finding.code}",
         message=(
             f"Se registro el hallazgo {finding.code}.\n\n"
@@ -156,21 +151,18 @@ def notify_new_finding(finding):
             f"Fuente: {finding.get_source_display()}\n"
             f"Estado: {display_status_label(finding)}"
         ),
-        from_email=from_email,
-        recipient_list=recipients,
-        fail_silently=True,
+        recipients=recipients,
+        notification_settings=notification_settings,
     )
 
 
 def notify_representative(subject, message):
     if not settings.REPRESENTANTE_GERENCIA_EMAIL:
         return 0
-    return send_mail(
+    return send_notification_email(
         subject=subject,
         message=message,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[settings.REPRESENTANTE_GERENCIA_EMAIL],
-        fail_silently=True,
+        recipients=[settings.REPRESENTANTE_GERENCIA_EMAIL],
     )
 
 
@@ -187,20 +179,14 @@ def notify_assignment(finding, assigned_user, phase):
     recipients = list(dict.fromkeys(email for email in recipients if email))
     if not recipients:
         return 0
-    from_email = (
-        f"{notification_settings.sender_name} <{notification_settings.sender_email}>"
-        if notification_settings.sender_email
-        else settings.DEFAULT_FROM_EMAIL
-    )
-    return send_mail(
+    return send_notification_email(
         subject=f"Asignacion de {phase}: {finding.code}",
         message=(
             f"Se asigno la fase {phase} del hallazgo {finding.code}.\n\n"
             f"Descripcion: {finding.description}"
         ),
-        from_email=from_email,
-        recipient_list=recipients,
-        fail_silently=True,
+        recipients=recipients,
+        notification_settings=notification_settings,
     )
 
 

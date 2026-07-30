@@ -1,4 +1,5 @@
 from pathlib import Path
+import sys
 
 import dj_database_url
 from decouple import Csv, config
@@ -91,6 +92,8 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
+if "test" in sys.argv:
+    MEDIA_ROOT = Path("/tmp/sgc-test-media")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 LOGIN_URL = "login"
@@ -105,6 +108,8 @@ EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="Sistema de gestion <no-reply@localhost>")
 
 REPRESENTANTE_GERENCIA_EMAIL = config("REPRESENTANTE_GERENCIA_EMAIL", default="")
+
+FIELD_ENCRYPTION_KEY = config("FIELD_ENCRYPTION_KEY", default="")
 
 SSO_CLIENT_ID = config("SSO_CLIENT_ID", default="")
 SSO_CLIENT_SECRET = config("SSO_CLIENT_SECRET", default="")

@@ -316,6 +316,13 @@ class SgcIdentityForm(StyledMaintainerForm):
 
 
 class NotificationSettingsForm(StyledMaintainerForm):
+    smtp_password = forms.CharField(
+        label="Contrasena SMTP",
+        required=False,
+        widget=forms.PasswordInput(render_value=False),
+        help_text="Se guarda cifrada. Dejar vacio para conservar la contrasena actual.",
+    )
+
     class Meta:
         model = NotificationSettings
         fields = [
@@ -325,6 +332,11 @@ class NotificationSettingsForm(StyledMaintainerForm):
             "notify_due_24h",
             "sender_name",
             "sender_email",
+            "smtp_host",
+            "smtp_port",
+            "smtp_use_tls",
+            "smtp_username",
+            "smtp_password",
             "internal_copy_emails",
             "due_alert_check_frequency",
         ]
@@ -335,20 +347,45 @@ class NotificationSettingsForm(StyledMaintainerForm):
             "notify_due_24h": "Alertar 24 horas antes de vencer",
             "sender_name": "Nombre remitente visible",
             "sender_email": "Correo remitente visible",
+            "smtp_host": "Servidor SMTP",
+            "smtp_port": "Puerto SMTP",
+            "smtp_use_tls": "Usar TLS",
+            "smtp_username": "Usuario SMTP",
             "internal_copy_emails": "Correos copia internos",
             "due_alert_check_frequency": "Frecuencia sugerida revision vencimientos",
         }
         help_texts = {
             "email_alerts_enabled": "Si esta desactivado, el sistema no enviara correos aunque SMTP este configurado.",
-            "sender_email": "La credencial real del correo se configura por variables .env, no aqui.",
+            "sender_email": "Correo visible para los usuarios. Puede coincidir con el usuario SMTP.",
+            "smtp_host": "Ejemplo Office 365: smtp.office365.com",
             "internal_copy_emails": "Ingrese un correo por linea. No guardar contrasenas.",
         }
         widgets = {
             "internal_copy_emails": forms.Textarea(attrs={"rows": 4}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.has_smtp_password:
+            self.fields["smtp_password"].help_text = "Contrasena SMTP configurada. Dejar vacio para conservarla."
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.set_smtp_password(self.cleaned_data.get("smtp_password"))
+        if commit:
+            instance.save()
+            self.save_m2m()
+        return instance
+
 
 class AuthenticationSettingsForm(StyledMaintainerForm):
+    client_secret = forms.CharField(
+        label="Client Secret",
+        required=False,
+        widget=forms.PasswordInput(render_value=False),
+        help_text="Se guarda cifrado. Dejar vacio para conservar el secret actual.",
+    )
+
     class Meta:
         model = AuthenticationSettings
         fields = [
@@ -356,6 +393,10 @@ class AuthenticationSettingsForm(StyledMaintainerForm):
             "sso_enabled",
             "provider",
             "allowed_domain",
+            "client_id",
+            "tenant_id",
+            "redirect_uri",
+            "client_secret",
             "auto_create_users",
             "default_role",
             "force_sso_for_internal_users",
@@ -365,12 +406,29 @@ class AuthenticationSettingsForm(StyledMaintainerForm):
             "sso_enabled": "SSO habilitado",
             "provider": "Proveedor SSO",
             "allowed_domain": "Dominio permitido",
+            "client_id": "Client ID",
+            "tenant_id": "Tenant ID",
+            "redirect_uri": "Redirect URI",
             "auto_create_users": "Crear usuarios automaticamente",
             "default_role": "Rol por defecto para usuarios nuevos",
             "force_sso_for_internal_users": "Forzar SSO para usuarios internos",
         }
         help_texts = {
-            "sso_enabled": "Activa la autenticacion SSO solo cuando TI entregue Client ID, Tenant ID y Secret por .env.",
+            "sso_enabled": "Activa la autenticacion SSO solo cuando la configuracion este completa.",
             "local_login_enabled": "Mantener activo durante la puesta en marcha para no bloquear administradores.",
             "default_role": "Debe coincidir con el nombre de un grupo/rol existente si se usa auto creacion.",
+            "redirect_uri": "Ejemplo: https://sg.tecnodatasa.cl/cuentas/sso/callback/",
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.has_client_secret:
+            self.fields["client_secret"].help_text = "Client Secret configurado. Dejar vacio para conservarlo."
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.set_client_secret(self.cleaned_data.get("client_secret"))
+        if commit:
+            instance.save()
+            self.save_m2m()
+        return instance

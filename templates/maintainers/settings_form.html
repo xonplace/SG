@@ -42,6 +42,9 @@
 
       <div class="sg-form-actions">
         <a href="{% url 'maintainers:home' %}" class="sg-button-secondary">Cancelar</a>
+        {% if secondary_submit %}
+          <button type="submit" name="{{ secondary_submit_name }}" value="1" class="sg-button-secondary">{{ secondary_submit }}</button>
+        {% endif %}
         <button type="submit" class="sg-button-primary">{{ submit_label }}</button>
       </div>
     </form>

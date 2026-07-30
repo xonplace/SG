@@ -1,7 +1,7 @@
 from django.conf import settings
-from django.core.mail import send_mail
 from django.core.management.base import BaseCommand
 
+from apps.core.emailing import send_notification_email
 from apps.core.models import NotificationSettings
 from apps.findings.models import Finding
 from apps.findings.services import findings_due_for_24h_alert
@@ -31,10 +31,6 @@ class Command(BaseCommand):
             recipients = notification_settings.copy_recipients()
             if settings.REPRESENTANTE_GERENCIA_EMAIL:
                 recipients.append(settings.REPRESENTANTE_GERENCIA_EMAIL)
-            if notification_settings.sender_email:
-                from_email = f"{notification_settings.sender_name} <{notification_settings.sender_email}>"
-            else:
-                from_email = settings.DEFAULT_FROM_EMAIL
             due_at = getattr(finding, due_field)
             label = FIELD_LABELS[due_field]
             if finding.classification == Finding.Classification.OPORTUNIDAD_MEJORA:
@@ -43,12 +39,11 @@ class Command(BaseCommand):
                 elif due_field == "corrective_action_review_due_at":
                     label = "revision de plan de accion"
             if recipients:
-                send_mail(
+                send_notification_email(
                     subject=f"Alerta 24h: {label} de {finding.code}",
                     message=f"El plazo de {label} del hallazgo {finding.code} vence el {due_at:%d-%m-%Y %H:%M}.",
-                    from_email=from_email,
-                    recipient_list=recipients,
-                    fail_silently=True,
+                    recipients=recipients,
+                    notification_settings=notification_settings,
                 )
             setattr(finding, sent_field, True)
             finding.save(update_fields=[sent_field, "updated_at"])

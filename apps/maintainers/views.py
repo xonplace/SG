@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.accounts.forms import ROLE_DESCRIPTIONS, ROLE_GROUPS
 from apps.core.audit import log_audit
+from apps.core.emailing import send_notification_email
 from apps.core.models import (
     AuditLog,
     AuthenticationSettings,
@@ -259,9 +260,23 @@ def notification_settings(request):
     if request.method == "POST":
         form = NotificationSettingsForm(request.POST, instance=settings_obj)
         if form.is_valid():
-            form.save()
+            settings_obj = form.save()
             log_audit(request, "Actualizar notificaciones", "Mantenedores", obj=settings_obj)
-            messages.success(request, "Configuracion de notificaciones actualizada correctamente.")
+            if "_test_email" in request.POST:
+                recipient = request.user.email or settings_obj.sender_email or settings_obj.smtp_username
+                sent = send_notification_email(
+                    "Prueba de correo Portal SGC",
+                    "Este es un correo de prueba enviado desde la configuracion de notificaciones del Portal SGC.",
+                    [recipient],
+                    notification_settings=settings_obj,
+                    respect_enabled=False,
+                )
+                if sent:
+                    messages.success(request, f"Configuracion guardada. Correo de prueba enviado a {recipient}.")
+                else:
+                    messages.warning(request, "Configuracion guardada, pero no se pudo enviar el correo de prueba. Revise SMTP, usuario, contrasena y remitente.")
+            else:
+                messages.success(request, "Configuracion de notificaciones actualizada correctamente.")
             return redirect("maintainers:notifications")
     else:
         form = NotificationSettingsForm(instance=settings_obj)
@@ -271,8 +286,10 @@ def notification_settings(request):
         {
             "form": form,
             "title": "Notificaciones por correo",
-            "description": "Activa alertas funcionales del sistema. Las credenciales SMTP se mantienen en variables de entorno.",
+            "description": "Activa alertas funcionales del sistema y configura el servidor SMTP. La contrasena se guarda cifrada.",
             "submit_label": "Guardar notificaciones",
+            "secondary_submit": "Guardar y probar correo",
+            "secondary_submit_name": "_test_email",
         },
     )
 
@@ -295,7 +312,7 @@ def authentication_settings(request):
         {
             "form": form,
             "title": "Autenticacion y SSO",
-            "description": "Configura la estrategia de acceso. Los secretos SSO se mantienen en variables de entorno.",
+            "description": "Configura la estrategia de acceso SSO. El Client Secret se guarda cifrado.",
             "submit_label": "Guardar autenticacion",
         },
     )

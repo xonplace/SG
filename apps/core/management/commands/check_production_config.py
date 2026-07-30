@@ -18,6 +18,7 @@ class Command(BaseCommand):
             ),
             (settings.ADMIN_URL != "admin/", "DJANGO_ADMIN_URL deberia cambiar la ruta por defecto /admin/."),
             (bool(settings.DATABASES["default"].get("HOST")), "DATABASE_URL debe apuntar a PostgreSQL."),
+            (bool(settings.FIELD_ENCRYPTION_KEY), "FIELD_ENCRYPTION_KEY debe estar configurada para cifrar secretos."),
         ]
 
         failed = False
@@ -35,19 +36,19 @@ class Command(BaseCommand):
 
         notification_settings = NotificationSettings.current()
         if notification_settings.email_alerts_enabled:
-            smtp_ready = bool(settings.EMAIL_HOST and settings.EMAIL_HOST_USER and settings.EMAIL_HOST_PASSWORD)
+            smtp_ready = notification_settings.is_smtp_configured
             if smtp_ready:
-                self.stdout.write(self.style.SUCCESS("OK - Alertas por correo activas y SMTP configurado."))
+                self.stdout.write(self.style.SUCCESS("OK - Alertas por correo activas y SMTP configurado en mantenedor."))
             else:
-                self.stdout.write(self.style.WARNING("AVISO - Alertas por correo activas, pero faltan variables SMTP en .env."))
+                self.stdout.write(self.style.WARNING("AVISO - Alertas por correo activas, pero faltan datos SMTP en mantenedor."))
 
         authentication_settings = AuthenticationSettings.current()
         if authentication_settings.sso_enabled:
-            sso_ready = bool(settings.SSO_CLIENT_ID and settings.SSO_CLIENT_SECRET and settings.SSO_TENANT_ID and settings.SSO_REDIRECT_URI)
+            sso_ready = authentication_settings.is_sso_configured
             if sso_ready:
-                self.stdout.write(self.style.SUCCESS("OK - SSO activado y variables principales configuradas."))
+                self.stdout.write(self.style.SUCCESS("OK - SSO activado y parametros configurados en mantenedor."))
             else:
-                self.stdout.write(self.style.WARNING("AVISO - SSO activo, pero faltan variables SSO en .env."))
+                self.stdout.write(self.style.WARNING("AVISO - SSO activo, pero faltan parametros en mantenedor."))
 
         if failed:
             self.stdout.write(self.style.ERROR("Configuracion productiva incompleta. Revisar puntos marcados."))

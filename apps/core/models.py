@@ -3,6 +3,8 @@ from urllib.parse import parse_qs, urlparse
 from django.db import models
 from django.conf import settings
 
+from .crypto import decrypt_value, encrypt_value
+
 
 class CompanyProfile(models.Model):
     company_name = models.CharField("nombre de la empresa", max_length=180, default="Tecnodata S.A.")
@@ -282,6 +284,11 @@ class NotificationSettings(models.Model):
     notify_due_24h = models.BooleanField("alertar 24 horas antes del vencimiento", default=True)
     sender_name = models.CharField("nombre remitente", max_length=120, default="Sistema de Gestion")
     sender_email = models.EmailField("correo remitente visible", blank=True)
+    smtp_host = models.CharField("servidor SMTP", max_length=180, blank=True)
+    smtp_port = models.PositiveIntegerField("puerto SMTP", default=587)
+    smtp_use_tls = models.BooleanField("usar TLS", default=True)
+    smtp_username = models.CharField("usuario SMTP", max_length=180, blank=True)
+    smtp_password_encrypted = models.TextField("contrasena SMTP cifrada", blank=True)
     internal_copy_emails = models.TextField(
         "correos copia internos",
         blank=True,
@@ -309,6 +316,21 @@ class NotificationSettings(models.Model):
     def copy_recipients(self):
         return [email.strip() for email in self.internal_copy_emails.splitlines() if email.strip()]
 
+    def set_smtp_password(self, value):
+        if value:
+            self.smtp_password_encrypted = encrypt_value(value)
+
+    def get_smtp_password(self):
+        return decrypt_value(self.smtp_password_encrypted)
+
+    @property
+    def has_smtp_password(self):
+        return bool(self.smtp_password_encrypted)
+
+    @property
+    def is_smtp_configured(self):
+        return bool(self.smtp_host and self.smtp_username and self.smtp_password_encrypted)
+
 
 class AuthenticationSettings(models.Model):
     class Provider(models.TextChoices):
@@ -325,6 +347,10 @@ class AuthenticationSettings(models.Model):
         default=Provider.MICROSOFT_ENTRA,
     )
     allowed_domain = models.CharField("dominio permitido", max_length=120, blank=True, default="tecnodatasa.cl")
+    client_id = models.CharField("Client ID", max_length=220, blank=True)
+    tenant_id = models.CharField("Tenant ID", max_length=220, blank=True)
+    redirect_uri = models.URLField("Redirect URI", blank=True)
+    client_secret_encrypted = models.TextField("Client Secret cifrado", blank=True)
     auto_create_users = models.BooleanField("crear usuarios automaticamente", default=False)
     default_role = models.CharField("rol por defecto nuevos usuarios", max_length=120, blank=True)
     force_sso_for_internal_users = models.BooleanField("forzar SSO para usuarios internos", default=False)
@@ -341,6 +367,21 @@ class AuthenticationSettings(models.Model):
     def current(cls):
         settings_obj, _created = cls.objects.get_or_create(pk=1)
         return settings_obj
+
+    def set_client_secret(self, value):
+        if value:
+            self.client_secret_encrypted = encrypt_value(value)
+
+    def get_client_secret(self):
+        return decrypt_value(self.client_secret_encrypted)
+
+    @property
+    def has_client_secret(self):
+        return bool(self.client_secret_encrypted)
+
+    @property
+    def is_sso_configured(self):
+        return bool(self.client_id and self.tenant_id and self.redirect_uri and self.client_secret_encrypted)
 
 
 class TrainingCompletion(models.Model):
