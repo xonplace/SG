@@ -275,6 +275,74 @@ class RolePermission(models.Model):
         return f"{self.role_name} - {self.permission_code}: {status}"
 
 
+class NotificationSettings(models.Model):
+    email_alerts_enabled = models.BooleanField("activar alertas por correo", default=False)
+    notify_finding_created = models.BooleanField("notificar creacion de hallazgo", default=True)
+    notify_assignments = models.BooleanField("notificar asignaciones", default=True)
+    notify_due_24h = models.BooleanField("alertar 24 horas antes del vencimiento", default=True)
+    sender_name = models.CharField("nombre remitente", max_length=120, default="Sistema de Gestion")
+    sender_email = models.EmailField("correo remitente visible", blank=True)
+    internal_copy_emails = models.TextField(
+        "correos copia internos",
+        blank=True,
+        help_text="Un correo por linea. No guardar contrasenas ni credenciales en este campo.",
+    )
+    due_alert_check_frequency = models.CharField(
+        "frecuencia sugerida revision vencimientos",
+        max_length=80,
+        default="Cada 1 hora",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Configuracion de notificaciones"
+        verbose_name_plural = "Configuracion de notificaciones"
+
+    def __str__(self):
+        return "Notificaciones por correo"
+
+    @classmethod
+    def current(cls):
+        settings_obj, _created = cls.objects.get_or_create(pk=1)
+        return settings_obj
+
+    def copy_recipients(self):
+        return [email.strip() for email in self.internal_copy_emails.splitlines() if email.strip()]
+
+
+class AuthenticationSettings(models.Model):
+    class Provider(models.TextChoices):
+        MICROSOFT_ENTRA = "microsoft_entra", "Microsoft Entra ID"
+        GOOGLE = "google", "Google"
+        OTHER = "other", "Otro"
+
+    local_login_enabled = models.BooleanField("login local habilitado", default=True)
+    sso_enabled = models.BooleanField("SSO habilitado", default=False)
+    provider = models.CharField(
+        "proveedor SSO",
+        max_length=40,
+        choices=Provider.choices,
+        default=Provider.MICROSOFT_ENTRA,
+    )
+    allowed_domain = models.CharField("dominio permitido", max_length=120, blank=True, default="tecnodatasa.cl")
+    auto_create_users = models.BooleanField("crear usuarios automaticamente", default=False)
+    default_role = models.CharField("rol por defecto nuevos usuarios", max_length=120, blank=True)
+    force_sso_for_internal_users = models.BooleanField("forzar SSO para usuarios internos", default=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Configuracion de autenticacion"
+        verbose_name_plural = "Configuracion de autenticacion"
+
+    def __str__(self):
+        return "Autenticacion y SSO"
+
+    @classmethod
+    def current(cls):
+        settings_obj, _created = cls.objects.get_or_create(pk=1)
+        return settings_obj
+
+
 class TrainingCompletion(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="training_completions")
     content = models.ForeignKey(SystemHelpContent, on_delete=models.CASCADE, related_name="completions")

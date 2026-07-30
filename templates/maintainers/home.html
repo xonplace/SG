@@ -43,6 +43,18 @@
       <p class="mt-3 text-xl font-semibold">Activacion</p>
       <p class="mt-2 text-xs text-neutral-500">Habilitar funciones por empresa</p>
     </a>
+    <a href="{% url 'maintainers:notifications' %}" class="sg-maintainer-card">
+      <span class="sg-maintainer-icon">N</span>
+      <p class="text-sm text-neutral-500">Notificaciones</p>
+      <p class="mt-3 text-xl font-semibold">Correo y alertas</p>
+      <p class="mt-2 text-xs text-neutral-500">Activacion funcional sin credenciales</p>
+    </a>
+    <a href="{% url 'maintainers:authentication' %}" class="sg-maintainer-card">
+      <span class="sg-maintainer-icon">S</span>
+      <p class="text-sm text-neutral-500">Autenticacion</p>
+      <p class="mt-3 text-xl font-semibold">Login y SSO</p>
+      <p class="mt-2 text-xs text-neutral-500">Proveedor, dominio y reglas de acceso</p>
+    </a>
     <a href="{% url 'maintainers:permission_matrix' %}" class="sg-maintainer-card">
       <span class="sg-maintainer-icon">R</span>
       <p class="text-sm text-neutral-500">Roles</p>

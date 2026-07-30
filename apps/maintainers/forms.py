@@ -1,6 +1,6 @@
 from django import forms
 
-from apps.core.models import CompanyProfile, SystemHelpContent
+from apps.core.models import AuthenticationSettings, CompanyProfile, NotificationSettings, SystemHelpContent
 from apps.findings.models import DeadlineSetting, MasterArea, MasterProcess, MasterSource
 from apps.sgc.models import SgcDocumentType
 
@@ -312,4 +312,65 @@ class SgcIdentityForm(StyledMaintainerForm):
             "quality_policy": forms.Textarea(attrs={"rows": 7}),
             "mission": forms.Textarea(attrs={"rows": 5}),
             "vision": forms.Textarea(attrs={"rows": 5}),
+        }
+
+
+class NotificationSettingsForm(StyledMaintainerForm):
+    class Meta:
+        model = NotificationSettings
+        fields = [
+            "email_alerts_enabled",
+            "notify_finding_created",
+            "notify_assignments",
+            "notify_due_24h",
+            "sender_name",
+            "sender_email",
+            "internal_copy_emails",
+            "due_alert_check_frequency",
+        ]
+        labels = {
+            "email_alerts_enabled": "Activar alertas por correo",
+            "notify_finding_created": "Notificar cuando se crea un hallazgo",
+            "notify_assignments": "Notificar asignaciones de responsables",
+            "notify_due_24h": "Alertar 24 horas antes de vencer",
+            "sender_name": "Nombre remitente visible",
+            "sender_email": "Correo remitente visible",
+            "internal_copy_emails": "Correos copia internos",
+            "due_alert_check_frequency": "Frecuencia sugerida revision vencimientos",
+        }
+        help_texts = {
+            "email_alerts_enabled": "Si esta desactivado, el sistema no enviara correos aunque SMTP este configurado.",
+            "sender_email": "La credencial real del correo se configura por variables .env, no aqui.",
+            "internal_copy_emails": "Ingrese un correo por linea. No guardar contrasenas.",
+        }
+        widgets = {
+            "internal_copy_emails": forms.Textarea(attrs={"rows": 4}),
+        }
+
+
+class AuthenticationSettingsForm(StyledMaintainerForm):
+    class Meta:
+        model = AuthenticationSettings
+        fields = [
+            "local_login_enabled",
+            "sso_enabled",
+            "provider",
+            "allowed_domain",
+            "auto_create_users",
+            "default_role",
+            "force_sso_for_internal_users",
+        ]
+        labels = {
+            "local_login_enabled": "Login local habilitado",
+            "sso_enabled": "SSO habilitado",
+            "provider": "Proveedor SSO",
+            "allowed_domain": "Dominio permitido",
+            "auto_create_users": "Crear usuarios automaticamente",
+            "default_role": "Rol por defecto para usuarios nuevos",
+            "force_sso_for_internal_users": "Forzar SSO para usuarios internos",
+        }
+        help_texts = {
+            "sso_enabled": "Activa la autenticacion SSO solo cuando TI entregue Client ID, Tenant ID y Secret por .env.",
+            "local_login_enabled": "Mantener activo durante la puesta en marcha para no bloquear administradores.",
+            "default_role": "Debe coincidir con el nombre de un grupo/rol existente si se usa auto creacion.",
         }

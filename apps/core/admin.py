@@ -2,7 +2,9 @@ from django.contrib import admin
 
 from .models import (
     AuditLog,
+    AuthenticationSettings,
     CompanyProfile,
+    NotificationSettings,
     RolePermission,
     SystemHelpContent,
     TrainingAssignment,
@@ -134,6 +136,31 @@ class RolePermissionAdmin(admin.ModelAdmin):
     list_display = ("role_name", "permission_code", "is_allowed", "updated_at")
     list_filter = ("role_name", "is_allowed")
     search_fields = ("role_name", "permission_code")
+
+
+@admin.register(NotificationSettings)
+class NotificationSettingsAdmin(admin.ModelAdmin):
+    list_display = (
+        "email_alerts_enabled",
+        "notify_finding_created",
+        "notify_assignments",
+        "notify_due_24h",
+        "sender_email",
+        "updated_at",
+    )
+
+
+@admin.register(AuthenticationSettings)
+class AuthenticationSettingsAdmin(admin.ModelAdmin):
+    list_display = (
+        "local_login_enabled",
+        "sso_enabled",
+        "provider",
+        "allowed_domain",
+        "auto_create_users",
+        "force_sso_for_internal_users",
+        "updated_at",
+    )
 
 
 @admin.register(TrainingCompletion)

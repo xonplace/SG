@@ -7,7 +7,14 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.accounts.forms import ROLE_DESCRIPTIONS, ROLE_GROUPS
 from apps.core.audit import log_audit
-from apps.core.models import AuditLog, CompanyProfile, RolePermission, SystemHelpContent
+from apps.core.models import (
+    AuditLog,
+    AuthenticationSettings,
+    CompanyProfile,
+    NotificationSettings,
+    RolePermission,
+    SystemHelpContent,
+)
 from apps.findings.models import DeadlineSetting, MasterArea, MasterProcess, MasterSource
 from apps.findings.permissions import (
     ADMINISTRATOR_GROUP,
@@ -22,11 +29,13 @@ from apps.sgc.models import SgcDocumentType
 
 from .forms import (
     AreaForm,
+    AuthenticationSettingsForm,
     CompanyLogoForm,
     CompanyProfileForm,
     DeadlineSettingForm,
     DocumentTypeForm,
     ModuleSettingsForm,
+    NotificationSettingsForm,
     ProcessForm,
     SgcIdentityForm,
     SourceForm,
@@ -240,6 +249,54 @@ def module_settings(request):
             "title": "Modulos del sistema",
             "description": "Activa o desactiva los modulos disponibles para la empresa que utiliza el sistema.",
             "submit_label": "Guardar modulos",
+        },
+    )
+
+
+@role_required(is_administrator)
+def notification_settings(request):
+    settings_obj = NotificationSettings.current()
+    if request.method == "POST":
+        form = NotificationSettingsForm(request.POST, instance=settings_obj)
+        if form.is_valid():
+            form.save()
+            log_audit(request, "Actualizar notificaciones", "Mantenedores", obj=settings_obj)
+            messages.success(request, "Configuracion de notificaciones actualizada correctamente.")
+            return redirect("maintainers:notifications")
+    else:
+        form = NotificationSettingsForm(instance=settings_obj)
+    return render(
+        request,
+        "maintainers/settings_form.html",
+        {
+            "form": form,
+            "title": "Notificaciones por correo",
+            "description": "Activa alertas funcionales del sistema. Las credenciales SMTP se mantienen en variables de entorno.",
+            "submit_label": "Guardar notificaciones",
+        },
+    )
+
+
+@role_required(is_administrator)
+def authentication_settings(request):
+    settings_obj = AuthenticationSettings.current()
+    if request.method == "POST":
+        form = AuthenticationSettingsForm(request.POST, instance=settings_obj)
+        if form.is_valid():
+            form.save()
+            log_audit(request, "Actualizar autenticacion", "Mantenedores", obj=settings_obj)
+            messages.success(request, "Configuracion de autenticacion actualizada correctamente.")
+            return redirect("maintainers:authentication")
+    else:
+        form = AuthenticationSettingsForm(instance=settings_obj)
+    return render(
+        request,
+        "maintainers/settings_form.html",
+        {
+            "form": form,
+            "title": "Autenticacion y SSO",
+            "description": "Configura la estrategia de acceso. Los secretos SSO se mantienen en variables de entorno.",
+            "submit_label": "Guardar autenticacion",
         },
     )
 

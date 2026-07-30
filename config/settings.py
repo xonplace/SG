@@ -105,3 +105,8 @@ EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="Sistema de gestion <no-reply@localhost>")
 
 REPRESENTANTE_GERENCIA_EMAIL = config("REPRESENTANTE_GERENCIA_EMAIL", default="")
+
+SSO_CLIENT_ID = config("SSO_CLIENT_ID", default="")
+SSO_CLIENT_SECRET = config("SSO_CLIENT_SECRET", default="")
+SSO_TENANT_ID = config("SSO_TENANT_ID", default="")
+SSO_REDIRECT_URI = config("SSO_REDIRECT_URI", default="")
