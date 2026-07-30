@@ -1,8 +1,13 @@
 from django.contrib.auth.views import LoginView
+from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 
 from apps.core.models import CompanyProfile
+
+
+def health(request):
+    return HttpResponse("ok", content_type="text/plain")
 
 
 def authenticated_home_url():

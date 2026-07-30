@@ -64,9 +64,30 @@ DJANGO_SECRET_KEY=clave-segura-generada
 DJANGO_DEBUG=False
 DJANGO_ALLOWED_HOSTS=192.168.0.106,sgc.tecnodata.local
 DJANGO_CSRF_TRUSTED_ORIGINS=http://192.168.0.106,http://sgc.tecnodata.local
+DJANGO_HEALTHCHECK_HOST=192.168.0.106
 POSTGRES_PASSWORD=password-seguro
 DATABASE_URL=postgres://sistema_gestion:password-seguro@db:5432/sistema_gestion
 ```
+
+La clave `DJANGO_SECRET_KEY` debe ser larga, aleatoria y exclusiva del ambiente productivo. En Linux se puede generar con:
+
+```bash
+openssl rand -hex 32
+```
+
+Si TI habilita HTTPS desde el inicio, ajustar tambien:
+
+```env
+DJANGO_CSRF_TRUSTED_ORIGINS=https://sgc.tecnodata.local,https://192.168.0.106
+DJANGO_SECURE_SSL_REDIRECT=True
+DJANGO_SESSION_COOKIE_SECURE=True
+DJANGO_CSRF_COOKIE_SECURE=True
+DJANGO_SECURE_HSTS_SECONDS=31536000
+DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS=True
+DJANGO_SECURE_HSTS_PRELOAD=False
+```
+
+Si el portal queda publicado temporalmente solo por HTTP interno, mantener esos valores en `False` hasta que HTTPS quede operativo.
 
 ## 4. Levantar produccion
 
@@ -78,6 +99,39 @@ docker compose -f docker-compose.prod.yml exec web python manage.py createsuperu
 ```
 
 El contenedor `web` tambien ejecuta `migrate` y `collectstatic` al iniciar, pero estos comandos manuales ayudan a validar el despliegue.
+
+Validar estado de contenedores:
+
+```bash
+docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml exec web python manage.py check
+docker compose -f docker-compose.prod.yml exec web python manage.py check --deploy
+```
+
+El `check --deploy` puede advertir sobre HTTPS si el sitio aun esta funcionando solo por HTTP interno. Esas advertencias deben resolverse cuando TI active certificado y redireccion HTTPS.
+
+## 4.1. Controles de seguridad incluidos en Docker
+
+El despliegue productivo queda preparado con:
+
+- `gunicorn` como servidor WSGI, no `runserver`.
+- `nginx` como frontal HTTP.
+- PostgreSQL sin puerto `5432` expuesto al host.
+- Variables reales en `.env.production`, archivo excluido de Git.
+- Volumenes persistentes para base de datos, archivos media y estaticos.
+- `restart: unless-stopped` para reinicio automatico.
+- Healthchecks para `db`, `web` y `nginx`.
+- Rotacion de logs Docker para evitar crecimiento indefinido.
+- Red Docker dedicada `sgc_internal`.
+- Aplicacion Django ejecutandose con usuario no-root dentro del contenedor.
+- Endpoint tecnico `/health/` para monitoreo interno.
+- Headers basicos de seguridad en Nginx.
+
+Puertos esperados:
+
+- `80`: acceso web por Nginx.
+- `5432`: no debe estar publicado hacia la red.
+- `8000`: solo interno entre Nginx y Django.
 
 ## 5. Dejar solo Hallazgos activo
 

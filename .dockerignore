@@ -1,12 +1,19 @@
 .env
+.env.production
+.env.local
 .venv/
 venv/
 __pycache__/
 *.py[cod]
 *.sqlite3
 db.sqlite3
+media/
+staticfiles/
+backups/
+tmp/
 
 node_modules/
+static/css/output.css
 static/css/output.css.map
 
 referencias/
