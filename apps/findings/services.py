@@ -6,6 +6,8 @@ from django.core.mail import send_mail
 from django.db.models import Q
 from django.utils import timezone
 
+from apps.core.models import NotificationSettings
+
 from .models import Finding, FindingHistory, Holiday
 
 
@@ -128,12 +130,23 @@ def display_status_label(finding):
 
 
 def notify_new_finding(finding):
-    recipients = []
+    notification_settings = NotificationSettings.current()
+    if not notification_settings.email_alerts_enabled or not notification_settings.notify_finding_created:
+        return 0
+
+    recipients = notification_settings.copy_recipients()
+    if finding.reported_by_email:
+        recipients.append(finding.reported_by_email)
     if settings.REPRESENTANTE_GERENCIA_EMAIL:
         recipients.append(settings.REPRESENTANTE_GERENCIA_EMAIL)
-    recipients = [email for email in recipients if email]
+    recipients = list(dict.fromkeys(email for email in recipients if email))
     if not recipients:
         return 0
+    from_email = (
+        f"{notification_settings.sender_name} <{notification_settings.sender_email}>"
+        if notification_settings.sender_email
+        else settings.DEFAULT_FROM_EMAIL
+    )
     return send_mail(
         subject=f"Nuevo hallazgo {finding.code}",
         message=(
@@ -143,7 +156,7 @@ def notify_new_finding(finding):
             f"Fuente: {finding.get_source_display()}\n"
             f"Estado: {display_status_label(finding)}"
         ),
-        from_email=settings.DEFAULT_FROM_EMAIL,
+        from_email=from_email,
         recipient_list=recipients,
         fail_silently=True,
     )
@@ -162,20 +175,30 @@ def notify_representative(subject, message):
 
 
 def notify_assignment(finding, assigned_user, phase):
-    recipients = []
+    notification_settings = NotificationSettings.current()
+    if not notification_settings.email_alerts_enabled or not notification_settings.notify_assignments:
+        return 0
+
+    recipients = notification_settings.copy_recipients()
     if assigned_user and assigned_user.email:
         recipients.append(assigned_user.email)
     if settings.REPRESENTANTE_GERENCIA_EMAIL:
         recipients.append(settings.REPRESENTANTE_GERENCIA_EMAIL)
+    recipients = list(dict.fromkeys(email for email in recipients if email))
     if not recipients:
         return 0
+    from_email = (
+        f"{notification_settings.sender_name} <{notification_settings.sender_email}>"
+        if notification_settings.sender_email
+        else settings.DEFAULT_FROM_EMAIL
+    )
     return send_mail(
         subject=f"Asignacion de {phase}: {finding.code}",
         message=(
             f"Se asigno la fase {phase} del hallazgo {finding.code}.\n\n"
             f"Descripcion: {finding.description}"
         ),
-        from_email=settings.DEFAULT_FROM_EMAIL,
+        from_email=from_email,
         recipient_list=recipients,
         fail_silently=True,
     )
