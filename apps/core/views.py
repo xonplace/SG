@@ -1,9 +1,10 @@
 from django.contrib.auth.views import LoginView
+from django.contrib import messages
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 
-from apps.core.models import CompanyProfile
+from apps.core.models import AuthenticationSettings, CompanyProfile
 
 
 def health(request):
@@ -17,8 +18,29 @@ def authenticated_home_url():
     return reverse("sgc:home")
 
 
+def sso_start(request):
+    messages.warning(
+        request,
+        "El inicio de sesion SSO aun no esta habilitado. Use el ingreso local de contingencia.",
+    )
+    return redirect(f"{reverse('login')}?local=1")
+
+
 class PortalLoginView(LoginView):
     template_name = "registration/login.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        auth_settings = AuthenticationSettings.current()
+        local_login_requested = self.request.GET.get("local") == "1"
+        context["authentication_settings"] = auth_settings
+        context["show_sso_entry"] = (
+            auth_settings.sso_enabled
+            and auth_settings.is_sso_configured
+            and not local_login_requested
+        )
+        context["local_login_requested"] = local_login_requested
+        return context
 
     def get_default_redirect_url(self):
         return authenticated_home_url()
