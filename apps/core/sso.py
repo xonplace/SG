@@ -3,6 +3,7 @@ import json
 import secrets
 import time
 from urllib.parse import urlencode
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 from cryptography.hazmat.primitives import hashes
@@ -36,8 +37,18 @@ def _post_form(url, data):
         headers={"Content-Type": "application/x-www-form-urlencoded"},
         method="POST",
     )
-    with urlopen(request, timeout=15) as response:
-        return json.loads(response.read().decode("utf-8"))
+    try:
+        with urlopen(request, timeout=15) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except HTTPError as exc:
+        details = exc.read().decode("utf-8", errors="replace")
+        try:
+            payload = json.loads(details)
+            error = payload.get("error") or f"HTTP {exc.code}"
+            description = payload.get("error_description") or details
+            raise SsoError(f"{error}: {description}") from exc
+        except json.JSONDecodeError as parse_exc:
+            raise SsoError(f"HTTP {exc.code}: {details}") from parse_exc
 
 
 def microsoft_metadata(tenant_id):
