@@ -145,6 +145,7 @@ class NotificationSettingsAdmin(admin.ModelAdmin):
         "notify_finding_created",
         "notify_assignments",
         "notify_due_24h",
+        "notify_overdue",
         "sender_email",
         "smtp_host",
         "smtp_username",

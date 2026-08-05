@@ -1059,7 +1059,7 @@ def finding_create(request):
                     new_status=finding.status,
                     comment=evidence.file.name,
                 )
-            notify_new_finding(finding)
+            notify_new_finding(finding, request=request)
             request.session["last_created_finding"] = {
                 "code": finding.code,
                 "description": finding.description,
@@ -1233,8 +1233,29 @@ def assign_correction(request, pk):
         finding.status = Finding.Status.CORRECCION_ASIGNADA
         finding.correction_due_at = correction.due_at
         finding.corrective_action_due_at = action.due_at
-        finding.save(update_fields=["status", "correction_due_at", "corrective_action_due_at", "updated_at"])
-        notify_assignment(finding, correction.assigned_to, "tratamiento del hallazgo")
+        finding.correction_alert_24h_sent = False
+        finding.corrective_action_alert_24h_sent = False
+        finding.correction_overdue_alert_sent = False
+        finding.corrective_action_overdue_alert_sent = False
+        finding.save(
+            update_fields=[
+                "status",
+                "correction_due_at",
+                "corrective_action_due_at",
+                "correction_alert_24h_sent",
+                "corrective_action_alert_24h_sent",
+                "correction_overdue_alert_sent",
+                "corrective_action_overdue_alert_sent",
+                "updated_at",
+            ]
+        )
+        notify_assignment(
+            finding,
+            correction.assigned_to,
+            "tratamiento del hallazgo: correccion y accion correctiva",
+            due_at=min(correction.due_at, action.due_at),
+            request=request,
+        )
         record_history(finding, "Tratamiento asignado", user=request.user if request.user.is_authenticated else None, previous_status=previous, new_status=finding.status)
 
     return transition_view(request, pk, "Asignar responsable de Correccion y Accion Correctiva", CorrectionAssignForm, get_instance, on_valid)
@@ -1272,8 +1293,25 @@ def submit_correction(request, pk):
             timezone.localtime(correction.submitted_at).date(),
             DeadlineSetting.current().correction_review_days,
         )
-        finding.save(update_fields=["status", "correction_review_due_at", "updated_at"])
-        notify_representative(f"Tratamiento actualizado: {finding.code}", f"La correccion del hallazgo {finding.code} fue enviada. Queda pendiente completar o revisar la accion correctiva.")
+        finding.correction_review_alert_24h_sent = False
+        finding.correction_review_overdue_alert_sent = False
+        finding.save(
+            update_fields=[
+                "status",
+                "correction_review_due_at",
+                "correction_review_alert_24h_sent",
+                "correction_review_overdue_alert_sent",
+                "updated_at",
+            ]
+        )
+        notify_representative(
+            f"Revision pendiente: correccion {finding.code}",
+            finding,
+            "Revisar si la correccion aplicada es conforme. Si la accion correctiva ya fue registrada, revisar tambien el plan de accion.",
+            due_at=finding.correction_review_due_at,
+            submitted_by=request.user if request.user.is_authenticated else None,
+            request=request,
+        )
         comment = f"Evidencia cargada: {evidence.file.name}" if evidence_file else ""
         record_history(finding, "Correccion enviada a revision", user=request.user if request.user.is_authenticated else None, previous_status=previous, new_status=finding.status, comment=comment)
 
@@ -1316,6 +1354,8 @@ def review_correction(request, pk):
             finding.correction_review_due_at = None
             finding.correction_alert_24h_sent = False
             finding.correction_review_alert_24h_sent = False
+            finding.correction_overdue_alert_sent = False
+            finding.correction_review_overdue_alert_sent = False
             history_label = "Correccion observada y devuelta"
         finding.save(
             update_fields=[
@@ -1326,6 +1366,8 @@ def review_correction(request, pk):
                 "corrective_action_review_due_at",
                 "correction_alert_24h_sent",
                 "correction_review_alert_24h_sent",
+                "correction_overdue_alert_sent",
+                "correction_review_overdue_alert_sent",
                 "updated_at",
             ]
         )
@@ -1352,10 +1394,20 @@ def assign_corrective_action(request, pk):
         action.save()
         finding.status = Finding.Status.ACCION_CORRECTIVA_ASIGNADA
         finding.corrective_action_due_at = action.due_at
-        finding.save(update_fields=["status", "corrective_action_due_at", "updated_at"])
+        finding.corrective_action_alert_24h_sent = False
+        finding.corrective_action_overdue_alert_sent = False
+        finding.save(
+            update_fields=[
+                "status",
+                "corrective_action_due_at",
+                "corrective_action_alert_24h_sent",
+                "corrective_action_overdue_alert_sent",
+                "updated_at",
+            ]
+        )
         assignment_label = "oportunidad de mejora" if is_improvement_opportunity(finding) else "accion correctiva"
         history_label = "Oportunidad de mejora asignada" if is_improvement_opportunity(finding) else "Accion correctiva asignada"
-        notify_assignment(finding, action.assigned_to, assignment_label)
+        notify_assignment(finding, action.assigned_to, assignment_label, due_at=action.due_at, request=request)
         record_history(finding, history_label, user=request.user if request.user.is_authenticated else None, previous_status=previous, new_status=finding.status)
 
     title = "Asignar oportunidad de mejora" if is_improvement_opportunity(finding) else "Asignar accion correctiva"
@@ -1385,7 +1437,17 @@ def submit_corrective_action(request, pk):
             timezone.localtime(action.submitted_at).date(),
             DeadlineSetting.current().corrective_action_review_days,
         )
-        finding.save(update_fields=["status", "corrective_action_review_due_at", "updated_at"])
+        finding.corrective_action_review_alert_24h_sent = False
+        finding.corrective_action_review_overdue_alert_sent = False
+        finding.save(
+            update_fields=[
+                "status",
+                "corrective_action_review_due_at",
+                "corrective_action_review_alert_24h_sent",
+                "corrective_action_review_overdue_alert_sent",
+                "updated_at",
+            ]
+        )
         evidence_file = form.cleaned_data.get("evidence_file")
         if evidence_file:
             Evidence.objects.create(
@@ -1396,10 +1458,24 @@ def submit_corrective_action(request, pk):
                 description="Evidencia de la accion correctiva",
             )
         if is_improvement_opportunity(finding):
-            notify_representative(f"Plan de accion en revision: {finding.code}", f"El plan de accion de la oportunidad de mejora {finding.code} fue enviado a revision.")
+            notify_representative(
+                f"Revision pendiente: plan de accion {finding.code}",
+                finding,
+                "Revisar si el plan de accion de la oportunidad de mejora es conforme.",
+                due_at=finding.corrective_action_review_due_at,
+                submitted_by=request.user if request.user.is_authenticated else None,
+                request=request,
+            )
             history_label = "Plan de accion enviado a revision"
         else:
-            notify_representative(f"Accion correctiva en revision: {finding.code}", f"La accion correctiva del hallazgo {finding.code} fue enviada a revision.")
+            notify_representative(
+                f"Revision pendiente: accion correctiva {finding.code}",
+                finding,
+                "Revisar si el plan de accion y la causa raiz son conformes.",
+                due_at=finding.corrective_action_review_due_at,
+                submitted_by=request.user if request.user.is_authenticated else None,
+                request=request,
+            )
             history_label = "Accion correctiva enviada a revision"
         record_history(finding, history_label, user=request.user if request.user.is_authenticated else None, previous_status=previous, new_status=finding.status)
 
@@ -1443,6 +1519,8 @@ def review_corrective_action(request, pk):
             finding.corrective_action_review_due_at = None
             finding.corrective_action_alert_24h_sent = False
             finding.corrective_action_review_alert_24h_sent = False
+            finding.corrective_action_overdue_alert_sent = False
+            finding.corrective_action_review_overdue_alert_sent = False
             history_label = "Plan de accion observado y devuelto" if is_improvement_opportunity(finding) else "Accion correctiva observada y devuelta"
         finding.save(
             update_fields=[
@@ -1451,6 +1529,8 @@ def review_corrective_action(request, pk):
                 "corrective_action_review_due_at",
                 "corrective_action_alert_24h_sent",
                 "corrective_action_review_alert_24h_sent",
+                "corrective_action_overdue_alert_sent",
+                "corrective_action_review_overdue_alert_sent",
                 "updated_at",
             ]
         )
@@ -1479,8 +1559,24 @@ def assign_verification(request, pk):
         verification.save()
         finding.status = Finding.Status.SEGUIMIENTO_ASIGNADO
         finding.verification_due_at = verification.due_at
-        finding.save(update_fields=["status", "verification_due_at", "updated_at"])
-        notify_assignment(finding, verification.assigned_to, "seguimiento y verificacion de eficacia")
+        finding.verification_alert_24h_sent = False
+        finding.verification_overdue_alert_sent = False
+        finding.save(
+            update_fields=[
+                "status",
+                "verification_due_at",
+                "verification_alert_24h_sent",
+                "verification_overdue_alert_sent",
+                "updated_at",
+            ]
+        )
+        notify_assignment(
+            finding,
+            verification.assigned_to,
+            "seguimiento y verificacion de eficacia",
+            due_at=verification.due_at,
+            request=request,
+        )
         record_history(finding, "Seguimiento asignado", user=request.user if request.user.is_authenticated else None, previous_status=previous, new_status=finding.status)
 
     return transition_view(request, pk, "Asignar seguimiento", VerificationAssignForm, get_instance, on_valid)
@@ -1510,7 +1606,14 @@ def submit_verification(request, pk):
         verification.save()
         finding.status = Finding.Status.SEGUIMIENTO_EN_REVISION
         finding.save(update_fields=["status", "updated_at"])
-        notify_representative(f"Seguimiento en revision: {finding.code}", f"El seguimiento del hallazgo {finding.code} fue enviado a revision.")
+        notify_representative(
+            f"Revision pendiente: seguimiento {finding.code}",
+            finding,
+            "Revisar el resultado del seguimiento y decidir si corresponde cierre o nuevo tratamiento.",
+            due_at=None,
+            submitted_by=request.user if request.user.is_authenticated else None,
+            request=request,
+        )
         record_history(finding, "Seguimiento enviado a revision", user=request.user if request.user.is_authenticated else None, previous_status=previous, new_status=finding.status)
 
     return transition_view(request, pk, "Registrar seguimiento", VerificationSubmitForm, get_instance, on_valid)
@@ -1536,8 +1639,10 @@ def review_verification(request, pk):
             finding.closed_at = timezone.now()
             finding.verification_due_at = None
             finding.verification_alert_24h_sent = False
+            finding.verification_overdue_alert_sent = False
             finding.corrective_action_due_at = None
             finding.corrective_action_alert_24h_sent = False
+            finding.corrective_action_overdue_alert_sent = False
             history_label = "Verificacion eficaz y hallazgo cerrado"
         else:
             if verification.is_effective:
@@ -1550,17 +1655,21 @@ def review_verification(request, pk):
                     DeadlineSetting.current().corrective_action_days,
                 )
                 finding.corrective_action_alert_24h_sent = False
+                finding.corrective_action_overdue_alert_sent = False
                 history_label = "Seguimiento no eficaz, accion devuelta"
             finding.verification_due_at = None
             finding.verification_alert_24h_sent = False
+            finding.verification_overdue_alert_sent = False
         finding.save(
             update_fields=[
                 "status",
                 "closed_at",
                 "verification_due_at",
                 "verification_alert_24h_sent",
+                "verification_overdue_alert_sent",
                 "corrective_action_due_at",
                 "corrective_action_alert_24h_sent",
+                "corrective_action_overdue_alert_sent",
                 "updated_at",
             ]
         )

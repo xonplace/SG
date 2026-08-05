@@ -282,6 +282,7 @@ class NotificationSettings(models.Model):
     notify_finding_created = models.BooleanField("notificar creacion de hallazgo", default=True)
     notify_assignments = models.BooleanField("notificar asignaciones", default=True)
     notify_due_24h = models.BooleanField("alertar 24 horas antes del vencimiento", default=True)
+    notify_overdue = models.BooleanField("alertar vencimientos incumplidos", default=True)
     sender_name = models.CharField("nombre remitente", max_length=120, default="Sistema de Gestion")
     sender_email = models.EmailField("correo remitente visible", blank=True)
     smtp_host = models.CharField("servidor SMTP", max_length=180, blank=True)

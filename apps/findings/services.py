@@ -3,10 +3,11 @@ from datetime import datetime, time, timedelta
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.core.emailing import send_notification_email
-from apps.core.models import NotificationSettings
+from apps.core.models import CompanyProfile, NotificationSettings
 
 from .models import Finding, FindingHistory, Holiday
 
@@ -94,6 +95,99 @@ def record_history(finding, action, user=None, previous_status="", new_status=""
     )
 
 
+def user_label(user):
+    if not user:
+        return "-"
+    full_name = user.get_full_name().strip()
+    return full_name or user.username
+
+
+def user_email(user):
+    return user.email if user and user.email else ""
+
+
+def format_due(due_at):
+    if not due_at:
+        return "-"
+    return timezone.localtime(due_at).strftime("%d-%m-%Y %H:%M")
+
+
+def finding_absolute_url(finding, request=None):
+    path = reverse("findings:detail", args=[finding.pk])
+    if request:
+        return request.build_absolute_uri(path)
+    base_url = settings.SITE_BASE_URL.strip().rstrip("/")
+    if base_url:
+        return f"{base_url}{path}"
+    return path
+
+
+def representative_emails():
+    recipients = []
+    company = CompanyProfile.current()
+    if company.representative_email:
+        recipients.append(company.representative_email)
+    if settings.REPRESENTANTE_GERENCIA_EMAIL:
+        recipients.append(settings.REPRESENTANTE_GERENCIA_EMAIL)
+    return list(dict.fromkeys(email for email in recipients if email))
+
+
+def finding_context_lines(finding, *, action_expected="", due_at=None, assigned_user=None, request=None):
+    lines = [
+        f"Codigo: {finding.code}",
+        f"Estado actual: {display_status_label(finding)}",
+        f"Clasificacion: {finding.get_classification_display() if finding.classification else 'Pendiente'}",
+        f"Fuente: {finding.get_source_display()}",
+        f"Proceso: {finding.process_label or '-'}",
+        f"Informado por: {finding.reported_by_name}",
+    ]
+    if assigned_user:
+        lines.append(f"Responsable: {user_label(assigned_user)}")
+    if due_at:
+        lines.append(f"Plazo: {format_due(due_at)}")
+    if action_expected:
+        lines.append(f"Accion esperada: {action_expected}")
+    lines.extend(
+        [
+            "",
+            "Descripcion:",
+            finding.description,
+            "",
+            f"Ver hallazgo: {finding_absolute_url(finding, request=request)}",
+            "",
+            "Este correo fue generado automaticamente por el Portal SGC.",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def due_recipient_user(finding, due_field):
+    if due_field in {"correction_due_at", "corrective_action_due_at"}:
+        correction = related_or_none(finding, "correction")
+        action = related_or_none(finding, "corrective_action")
+        return (correction and correction.assigned_to) or (action and action.assigned_to)
+    if due_field == "verification_due_at":
+        verification = related_or_none(finding, "effectiveness_verification")
+        return verification and verification.assigned_to
+    return None
+
+
+def review_action_label(finding, due_field):
+    if due_field == "validation_due_at":
+        return "Validar si el hallazgo aplica y clasificarlo si corresponde."
+    if due_field == "correction_due_at":
+        return "Registrar la correccion aplicada y cargar evidencia si corresponde."
+    if due_field == "correction_review_due_at":
+        return "Revisar si la correccion aplicada es conforme."
+    if due_field == "corrective_action_due_at":
+        return "Registrar el plan de accion y el analisis de causa raiz."
+    if due_field == "corrective_action_review_due_at":
+        return "Revisar si el plan de accion es conforme."
+    if due_field == "verification_due_at":
+        return "Registrar el seguimiento y la verificacion de eficacia."
+    return "Revisar la actividad pendiente en el Portal SGC."
+
+
 def related_or_none(instance, relation_name):
     try:
         return getattr(instance, relation_name)
@@ -129,7 +223,7 @@ def display_status_label(finding):
     return labels.get(finding.status, finding.get_status_display())
 
 
-def notify_new_finding(finding):
+def notify_new_finding(finding, request=None):
     notification_settings = NotificationSettings.current()
     if not notification_settings.email_alerts_enabled or not notification_settings.notify_finding_created:
         return 0
@@ -137,36 +231,42 @@ def notify_new_finding(finding):
     recipients = notification_settings.copy_recipients()
     if finding.reported_by_email:
         recipients.append(finding.reported_by_email)
-    if settings.REPRESENTANTE_GERENCIA_EMAIL:
-        recipients.append(settings.REPRESENTANTE_GERENCIA_EMAIL)
+    recipients.extend(representative_emails())
     recipients = list(dict.fromkeys(email for email in recipients if email))
     if not recipients:
         return 0
     return send_notification_email(
-        subject=f"Nuevo hallazgo {finding.code}",
-        message=(
-            f"Se registro el hallazgo {finding.code}.\n\n"
-            f"Descripcion: {finding.description}\n\n"
-            f"Informado por: {finding.reported_by_name}\n"
-            f"Fuente: {finding.get_source_display()}\n"
-            f"Estado: {display_status_label(finding)}"
+        subject=f"Nuevo hallazgo registrado: {finding.code}",
+        message=finding_context_lines(
+            finding,
+            action_expected="El Representante de la Gerencia debe validar si corresponde tratamiento.",
+            due_at=finding.validation_due_at,
+            request=request,
         ),
         recipients=recipients,
         notification_settings=notification_settings,
     )
 
 
-def notify_representative(subject, message):
-    if not settings.REPRESENTANTE_GERENCIA_EMAIL:
+def notify_representative(subject, finding, action_expected, *, due_at=None, submitted_by=None, request=None):
+    recipients = representative_emails()
+    if not recipients:
         return 0
+    message = finding_context_lines(
+        finding,
+        action_expected=action_expected,
+        due_at=due_at,
+        assigned_user=submitted_by,
+        request=request,
+    )
     return send_notification_email(
         subject=subject,
         message=message,
-        recipients=[settings.REPRESENTANTE_GERENCIA_EMAIL],
+        recipients=recipients,
     )
 
 
-def notify_assignment(finding, assigned_user, phase):
+def notify_assignment(finding, assigned_user, phase, *, due_at=None, request=None):
     notification_settings = NotificationSettings.current()
     if not notification_settings.email_alerts_enabled or not notification_settings.notify_assignments:
         return 0
@@ -174,16 +274,18 @@ def notify_assignment(finding, assigned_user, phase):
     recipients = notification_settings.copy_recipients()
     if assigned_user and assigned_user.email:
         recipients.append(assigned_user.email)
-    if settings.REPRESENTANTE_GERENCIA_EMAIL:
-        recipients.append(settings.REPRESENTANTE_GERENCIA_EMAIL)
+    recipients.extend(representative_emails())
     recipients = list(dict.fromkeys(email for email in recipients if email))
     if not recipients:
         return 0
     return send_notification_email(
-        subject=f"Asignacion de {phase}: {finding.code}",
-        message=(
-            f"Se asigno la fase {phase} del hallazgo {finding.code}.\n\n"
-            f"Descripcion: {finding.description}"
+        subject=f"Tarea asignada en hallazgo {finding.code}",
+        message=finding_context_lines(
+            finding,
+            action_expected=f"Completar la etapa asignada: {phase}.",
+            due_at=due_at,
+            assigned_user=assigned_user,
+            request=request,
         ),
         recipients=recipients,
         notification_settings=notification_settings,
@@ -209,6 +311,29 @@ def findings_due_for_24h_alert(now=None):
             "status__in": statuses,
             f"{due_field}__gt": window_start,
             f"{due_field}__lte": window_end,
+            sent_field: False,
+        }
+        for finding in Finding.objects.filter(**query):
+            results.append((finding, due_field, sent_field))
+    return results
+
+
+def findings_overdue_for_alert(now=None):
+    now = now or timezone.now()
+    sent_fields = {
+        "validation_due_at": "validation_overdue_alert_sent",
+        "correction_due_at": "correction_overdue_alert_sent",
+        "correction_review_due_at": "correction_review_overdue_alert_sent",
+        "corrective_action_due_at": "corrective_action_overdue_alert_sent",
+        "corrective_action_review_due_at": "corrective_action_review_overdue_alert_sent",
+        "verification_due_at": "verification_overdue_alert_sent",
+    }
+    results = []
+    for _label, due_field, statuses in active_due_definitions():
+        sent_field = sent_fields[due_field]
+        query = {
+            "status__in": statuses,
+            f"{due_field}__lt": now,
             sent_field: False,
         }
         for finding in Finding.objects.filter(**query):

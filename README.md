@@ -112,6 +112,8 @@ docker compose exec web python manage.py createsuperuser
 docker compose exec web python manage.py send_due_alerts
 ```
 
+En produccion, `docker-compose.prod.yml` incluye un servicio `alerts` que ejecuta `send_due_alerts` cada 60 minutos. El envio real depende de que las alertas esten activadas en el mantenedor de notificaciones.
+
 ## Usuarios y roles
 
 El formulario publico de registro de hallazgos queda disponible en `/hallazgos/nuevo/`.

@@ -54,6 +54,31 @@ services:
     networks:
       - sgc_internal
 
+  alerts:
+    build: .
+    restart: unless-stopped
+    command: >
+      sh -c "while true; do
+             python manage.py send_due_alerts;
+             sleep 3600;
+             done"
+    env_file:
+      - .env.production
+    volumes:
+      - mediafiles:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - sgc_internal
+
   db:
     image: postgres:16-alpine
     restart: unless-stopped

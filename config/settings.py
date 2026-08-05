@@ -108,6 +108,7 @@ EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="Sistema de gestion <no-reply@localhost>")
 
 REPRESENTANTE_GERENCIA_EMAIL = config("REPRESENTANTE_GERENCIA_EMAIL", default="")
+SITE_BASE_URL = config("SITE_BASE_URL", default="")
 
 FIELD_ENCRYPTION_KEY = config("FIELD_ENCRYPTION_KEY", default="")
 

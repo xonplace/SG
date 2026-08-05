@@ -189,6 +189,12 @@ class Finding(TimeStampedModel):
     corrective_action_alert_24h_sent = models.BooleanField(default=False)
     corrective_action_review_alert_24h_sent = models.BooleanField(default=False)
     verification_alert_24h_sent = models.BooleanField(default=False)
+    validation_overdue_alert_sent = models.BooleanField(default=False)
+    correction_overdue_alert_sent = models.BooleanField(default=False)
+    correction_review_overdue_alert_sent = models.BooleanField(default=False)
+    corrective_action_overdue_alert_sent = models.BooleanField(default=False)
+    corrective_action_review_overdue_alert_sent = models.BooleanField(default=False)
+    verification_overdue_alert_sent = models.BooleanField(default=False)
     closed_at = models.DateTimeField("fecha cierre", null=True, blank=True)
 
     class Meta:

@@ -101,6 +101,15 @@ Ejecutar alertas de vencimiento manualmente:
 docker compose -f docker-compose.prod.yml exec web python manage.py send_due_alerts
 ```
 
+Validar servicio automatico de alertas:
+
+```bash
+docker compose --env-file .env.production -f docker-compose.prod.yml ps alerts
+docker compose --env-file .env.production -f docker-compose.prod.yml logs --tail=80 alerts
+```
+
+El servicio `alerts` revisa plazos cada 60 minutos. No envia correos si el mantenedor de notificaciones tiene las alertas desactivadas.
+
 Ocultar modulos no liberados:
 
 ```bash
