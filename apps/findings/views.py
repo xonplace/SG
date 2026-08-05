@@ -1106,12 +1106,21 @@ def finding_delete(request, pk):
     finding.display_status_label = display_status_label(finding)
     if request.method == "POST":
         code = finding.code
+        file_delete_errors = []
         evidence_files = list(finding.evidences.all())
         for evidence in evidence_files:
             if evidence.file:
-                evidence.file.delete(save=False)
+                try:
+                    evidence.file.delete(save=False)
+                except OSError:
+                    file_delete_errors.append(evidence.file.name)
         finding.delete()
         messages.success(request, f"Hallazgo {code} eliminado definitivamente.")
+        if file_delete_errors:
+            messages.warning(
+                request,
+                "El hallazgo fue eliminado, pero algunos archivos fisicos no pudieron borrarse por permisos del servidor.",
+            )
         return redirect("findings:list")
 
     return render(request, "findings/finding_confirm_delete.html", {"finding": finding})
