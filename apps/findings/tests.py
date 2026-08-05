@@ -224,3 +224,33 @@ class FindingTreatmentReviewTests(TestCase):
         evidence = Evidence.objects.get(finding=finding)
         self.assertEqual(evidence.corrective_action, plan)
         self.assertIsNone(evidence.correction)
+
+    def test_superuser_can_delete_finding_definitively(self):
+        finding = self.finding(status=Finding.Status.INGRESADO)
+        Evidence.objects.create(
+            finding=finding,
+            uploaded_by=self.user,
+            description="Evidencia de prueba",
+            file=SimpleUploadedFile("delete-me.txt", b"contenido", content_type="text/plain"),
+        )
+
+        response = self.client.post(reverse("findings:delete", args=[finding.pk]))
+
+        self.assertRedirects(response, reverse("findings:list"), fetch_redirect_response=False)
+        self.assertFalse(Finding.objects.filter(pk=finding.pk).exists())
+        self.assertFalse(Evidence.objects.filter(finding_id=finding.pk).exists())
+
+    def test_non_superuser_cannot_delete_finding(self):
+        viewer = get_user_model().objects.create_user(
+            username="delete-viewer",
+            email="delete-viewer@example.com",
+            password="pass",
+        )
+        viewer.groups.add(self.query_group)
+        finding = self.finding(status=Finding.Status.INGRESADO)
+
+        self.client.force_login(viewer)
+        response = self.client.post(reverse("findings:delete", args=[finding.pk]))
+
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(Finding.objects.filter(pk=finding.pk).exists())

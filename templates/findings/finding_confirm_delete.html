@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Eliminar hallazgo | {{ finding.code }}{% endblock %}
+
+{% block content %}
+<section class="sg-form-page">
+  <article class="sg-form-panel">
+    <div class="mb-6">
+      <p class="sg-danger-kicker">Eliminar hallazgo</p>
+      <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">{{ finding.code }}</h1>
+      <p class="mt-2 text-sm leading-6 text-slate-600">
+        Esta accion eliminara definitivamente el hallazgo, su tratamiento, historial y evidencias asociadas.
+        Debe usarse solo para limpieza administrativa o registros de prueba.
+      </p>
+    </div>
+
+    <div class="sg-danger-panel">
+      <p class="font-semibold">Confirmacion requerida</p>
+      <p class="mt-1">
+        Esta accion no se puede deshacer desde el sitio. Si el hallazgo corresponde a un caso real del SGC,
+        se recomienda conservarlo como trazabilidad en lugar de eliminarlo.
+      </p>
+    </div>
+
+    <dl class="mb-6 grid gap-3 sm:grid-cols-2">
+      <div class="sg-confirm-meta">
+        <dt class="text-sm text-neutral-500">Codigo</dt>
+        <dd class="mt-1 font-semibold text-neutral-950">{{ finding.code }}</dd>
+      </div>
+      <div class="sg-confirm-meta">
+        <dt class="text-sm text-neutral-500">Estado</dt>
+        <dd class="mt-1 font-semibold text-neutral-950">{{ finding.display_status_label }}</dd>
+      </div>
+      <div class="sg-confirm-meta">
+        <dt class="text-sm text-neutral-500">Informado por</dt>
+        <dd class="mt-1 font-semibold text-neutral-950">{{ finding.reported_by_name }}</dd>
+      </div>
+      <div class="sg-confirm-meta">
+        <dt class="text-sm text-neutral-500">Fecha registro</dt>
+        <dd class="mt-1 font-semibold text-neutral-950">{{ finding.report_date|date:"d-m-Y" }}</dd>
+      </div>
+      <div class="sg-confirm-meta sm:col-span-2">
+        <dt class="text-sm text-neutral-500">Descripcion</dt>
+        <dd class="mt-1 text-neutral-950">{{ finding.description }}</dd>
+      </div>
+    </dl>
+
+    <form method="post" class="sg-form-actions">
+      {% csrf_token %}
+      <a href="{% url 'findings:detail' finding.pk %}" class="sg-button-secondary">Cancelar</a>
+      <button type="submit" class="sg-button-danger">Eliminar definitivamente</button>
+    </form>
+  </article>
+</section>
+{% endblock %}

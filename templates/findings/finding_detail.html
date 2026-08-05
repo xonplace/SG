@@ -19,6 +19,11 @@
       {% empty %}
         <span class="text-sm text-neutral-500">Sin acciones pendientes para tu rol.</span>
       {% endfor %}
+      {% if can_delete_finding %}
+        <a href="{% url 'findings:delete' finding.pk %}" class="sg-button-secondary border-red-200 text-red-700 hover:bg-red-50">
+          Eliminar
+        </a>
+      {% endif %}
     </div>
   </div>
 

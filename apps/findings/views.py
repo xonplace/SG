@@ -1092,8 +1092,29 @@ def finding_detail(request, pk):
             "timeline": finding_timeline(finding),
             "evidence_groups": evidence_stage_groups(finding),
             "can_upload_evidence": can_upload_evidence(finding, request.user, detected_phase),
+            "can_delete_finding": request.user.is_superuser,
         },
     )
+
+
+@login_required
+def finding_delete(request, pk):
+    if not request.user.is_superuser:
+        raise PermissionDenied("Solo un superusuario puede eliminar hallazgos definitivamente.")
+
+    finding = get_object_or_404(Finding, pk=pk)
+    finding.display_status_label = display_status_label(finding)
+    if request.method == "POST":
+        code = finding.code
+        evidence_files = list(finding.evidences.all())
+        for evidence in evidence_files:
+            if evidence.file:
+                evidence.file.delete(save=False)
+        finding.delete()
+        messages.success(request, f"Hallazgo {code} eliminado definitivamente.")
+        return redirect("findings:list")
+
+    return render(request, "findings/finding_confirm_delete.html", {"finding": finding})
 
 
 @role_required(can_view_findings)
