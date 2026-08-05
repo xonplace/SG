@@ -295,6 +295,11 @@ class NotificationSettings(models.Model):
         blank=True,
         help_text="Un correo por linea. No guardar contrasenas ni credenciales en este campo.",
     )
+    site_base_url = models.URLField(
+        "URL publica del sitio",
+        blank=True,
+        help_text="URL usada para construir enlaces en correos, por ejemplo https://sg.tecnodatasa.cl.",
+    )
     due_alert_check_frequency = models.CharField(
         "frecuencia sugerida revision vencimientos",
         max_length=80,

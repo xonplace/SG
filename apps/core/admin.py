@@ -149,6 +149,7 @@ class NotificationSettingsAdmin(admin.ModelAdmin):
         "sender_email",
         "smtp_host",
         "smtp_username",
+        "site_base_url",
         "updated_at",
     )
     readonly_fields = ("smtp_password_encrypted",)

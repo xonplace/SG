@@ -116,6 +116,9 @@ def finding_absolute_url(finding, request=None):
     path = reverse("findings:detail", args=[finding.pk])
     if request:
         return request.build_absolute_uri(path)
+    notification_settings = NotificationSettings.current()
+    if notification_settings.site_base_url:
+        return f"{notification_settings.site_base_url.strip().rstrip('/')}{path}"
     base_url = settings.SITE_BASE_URL.strip().rstrip("/")
     if base_url:
         return f"{base_url}{path}"

@@ -340,6 +340,7 @@ class NotificationSettingsForm(StyledMaintainerForm):
             "smtp_username",
             "smtp_password",
             "internal_copy_emails",
+            "site_base_url",
             "due_alert_check_frequency",
         ]
         labels = {
@@ -355,6 +356,7 @@ class NotificationSettingsForm(StyledMaintainerForm):
             "smtp_use_tls": "Usar TLS",
             "smtp_username": "Usuario SMTP",
             "internal_copy_emails": "Correos copia internos",
+            "site_base_url": "URL publica del sitio",
             "due_alert_check_frequency": "Frecuencia sugerida revision vencimientos",
         }
         help_texts = {
@@ -362,6 +364,7 @@ class NotificationSettingsForm(StyledMaintainerForm):
             "sender_email": "Correo visible para los usuarios. Puede coincidir con el usuario SMTP.",
             "smtp_host": "Ejemplo Office 365: smtp.office365.com",
             "internal_copy_emails": "Ingrese un correo por linea. No guardar contrasenas.",
+            "site_base_url": "Ejemplo: https://sg.tecnodatasa.cl. Se usa en los links enviados por correo.",
         }
         widgets = {
             "internal_copy_emails": forms.Textarea(attrs={"rows": 4}),
