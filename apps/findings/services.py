@@ -4,6 +4,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 
@@ -138,40 +139,71 @@ def representative_emails():
         get_user_model()
         .objects.filter(is_active=True)
         .exclude(email="")
-        .filter(Q(groups__name=REPRESENTATIVE_GROUP) | Q(is_superuser=True))
+        .filter(groups__name=REPRESENTATIVE_GROUP)
         .distinct()
     )
     recipients.extend(representative_users.values_list("email", flat=True))
     return list(dict.fromkeys(email for email in recipients if email))
 
 
-def finding_context_lines(finding, *, action_expected="", due_at=None, assigned_user=None, request=None):
-    lines = [
-        f"Codigo: {finding.code}",
-        f"Estado actual: {display_status_label(finding)}",
-        f"Clasificacion: {finding.get_classification_display() if finding.classification else 'Pendiente'}",
-        f"Fuente: {finding.get_source_display()}",
-        f"Proceso: {finding.process_label or '-'}",
-        f"Informado por: {finding.reported_by_name}",
+def finding_notification_context(finding, *, title="", action_expected="", due_at=None, assigned_user=None, request=None):
+    details = [
+        ("Codigo", finding.code),
+        ("Estado actual", display_status_label(finding)),
+        ("Clasificacion", finding.get_classification_display() if finding.classification else "Pendiente"),
+        ("Fuente", finding.get_source_display()),
+        ("Proceso", finding.process_label or "-"),
+        ("Informado por", finding.reported_by_name),
     ]
     if assigned_user:
-        lines.append(f"Responsable: {user_label(assigned_user)}")
+        details.append(("Responsable", user_label(assigned_user)))
     if due_at:
-        lines.append(f"Plazo: {format_due(due_at)}")
-    if action_expected:
-        lines.append(f"Accion esperada: {action_expected}")
+        details.append(("Plazo", format_due(due_at)))
+    return {
+        "title": title or f"Hallazgo {finding.code}",
+        "finding": finding,
+        "details": details,
+        "action_expected": action_expected,
+        "finding_url": finding_absolute_url(finding, request=request),
+    }
+
+
+def finding_context_lines(finding, *, title="", action_expected="", due_at=None, assigned_user=None, request=None):
+    context = finding_notification_context(
+        finding,
+        title=title,
+        action_expected=action_expected,
+        due_at=due_at,
+        assigned_user=assigned_user,
+        request=request,
+    )
+    lines = [f"{label}: {value}" for label, value in context["details"]]
+    if context["action_expected"]:
+        lines.append(f"Accion esperada: {context['action_expected']}")
     lines.extend(
         [
             "",
             "Descripcion:",
             finding.description,
             "",
-            f"Ver hallazgo: {finding_absolute_url(finding, request=request)}",
+            f"Ver hallazgo: {context['finding_url']}",
             "",
             "Este correo fue generado automaticamente por el Portal SGC.",
         ]
     )
     return "\n".join(lines)
+
+
+def finding_context_html(finding, *, title="", action_expected="", due_at=None, assigned_user=None, request=None):
+    context = finding_notification_context(
+        finding,
+        title=title,
+        action_expected=action_expected,
+        due_at=due_at,
+        assigned_user=assigned_user,
+        request=request,
+    )
+    return render_to_string("emails/finding_notification.html", context)
 
 
 def due_recipient_user(finding, due_field):
@@ -241,7 +273,7 @@ def notify_new_finding(finding, request=None):
     if not notification_settings.email_alerts_enabled or not notification_settings.notify_finding_created:
         return 0
 
-    recipients = notification_settings.copy_recipients()
+    recipients = []
     if finding.reported_by_email:
         recipients.append(finding.reported_by_email)
     recipients.extend(representative_emails())
@@ -252,6 +284,14 @@ def notify_new_finding(finding, request=None):
         subject=f"Nuevo hallazgo registrado: {finding.code}",
         message=finding_context_lines(
             finding,
+            title="Nuevo hallazgo registrado",
+            action_expected="El Representante de la Gerencia debe validar si corresponde tratamiento.",
+            due_at=finding.validation_due_at,
+            request=request,
+        ),
+        html_message=finding_context_html(
+            finding,
+            title="Nuevo hallazgo registrado",
             action_expected="El Representante de la Gerencia debe validar si corresponde tratamiento.",
             due_at=finding.validation_due_at,
             request=request,
@@ -267,6 +307,15 @@ def notify_representative(subject, finding, action_expected, *, due_at=None, sub
         return 0
     message = finding_context_lines(
         finding,
+        title="Revision pendiente",
+        action_expected=action_expected,
+        due_at=due_at,
+        assigned_user=submitted_by,
+        request=request,
+    )
+    html_message = finding_context_html(
+        finding,
+        title="Revision pendiente",
         action_expected=action_expected,
         due_at=due_at,
         assigned_user=submitted_by,
@@ -275,6 +324,7 @@ def notify_representative(subject, finding, action_expected, *, due_at=None, sub
     return send_notification_email(
         subject=subject,
         message=message,
+        html_message=html_message,
         recipients=recipients,
     )
 
@@ -284,10 +334,9 @@ def notify_assignment(finding, assigned_user, phase, *, due_at=None, request=Non
     if not notification_settings.email_alerts_enabled or not notification_settings.notify_assignments:
         return 0
 
-    recipients = notification_settings.copy_recipients()
+    recipients = []
     if assigned_user and assigned_user.email:
         recipients.append(assigned_user.email)
-    recipients.extend(representative_emails())
     recipients = list(dict.fromkeys(email for email in recipients if email))
     if not recipients:
         return 0
@@ -295,6 +344,15 @@ def notify_assignment(finding, assigned_user, phase, *, due_at=None, request=Non
         subject=f"Tarea asignada en hallazgo {finding.code}",
         message=finding_context_lines(
             finding,
+            title="Tarea asignada",
+            action_expected=f"Completar la etapa asignada: {phase}.",
+            due_at=due_at,
+            assigned_user=assigned_user,
+            request=request,
+        ),
+        html_message=finding_context_html(
+            finding,
+            title="Tarea asignada",
             action_expected=f"Completar la etapa asignada: {phase}.",
             due_at=due_at,
             assigned_user=assigned_user,

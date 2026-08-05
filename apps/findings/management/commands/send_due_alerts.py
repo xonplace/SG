@@ -6,6 +6,7 @@ from apps.findings.models import Finding
 from apps.findings.services import (
     due_recipient_user,
     finding_context_lines,
+    finding_context_html,
     findings_due_for_24h_alert,
     findings_overdue_for_alert,
     format_due,
@@ -71,6 +72,14 @@ class Command(BaseCommand):
                     subject=f"Plazo proximo a vencer: {finding.code}",
                     message=finding_context_lines(
                         finding,
+                        title="Plazo proximo a vencer",
+                        action_expected=f"{review_action_label(finding, due_field)} El plazo vence el {format_due(due_at)}.",
+                        due_at=due_at,
+                        assigned_user=due_recipient_user(finding, due_field),
+                    ),
+                    html_message=finding_context_html(
+                        finding,
+                        title="Plazo proximo a vencer",
                         action_expected=f"{review_action_label(finding, due_field)} El plazo vence el {format_due(due_at)}.",
                         due_at=due_at,
                         assigned_user=due_recipient_user(finding, due_field),
@@ -94,6 +103,14 @@ class Command(BaseCommand):
                     subject=f"Actividad vencida: {finding.code}",
                     message=finding_context_lines(
                         finding,
+                        title="Actividad vencida",
+                        action_expected=f"La actividad '{label}' se encuentra vencida. {review_action_label(finding, due_field)}",
+                        due_at=due_at,
+                        assigned_user=due_recipient_user(finding, due_field),
+                    ),
+                    html_message=finding_context_html(
+                        finding,
+                        title="Actividad vencida",
                         action_expected=f"La actividad '{label}' se encuentra vencida. {review_action_label(finding, due_field)}",
                         due_at=due_at,
                         assigned_user=due_recipient_user(finding, due_field),

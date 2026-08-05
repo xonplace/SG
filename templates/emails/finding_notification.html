@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <title>{{ title }}</title>
+  </head>
+  <body style="margin:0; padding:0; background:#f3f6fb; font-family:Arial, Helvetica, sans-serif; color:#172033;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f3f6fb; padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="640" cellspacing="0" cellpadding="0" style="width:640px; max-width:100%; background:#ffffff; border:1px solid #d8e3f2; border-radius:16px; overflow:hidden;">
+            <tr>
+              <td style="background:#244a86; padding:24px 28px;">
+                <p style="margin:0 0 8px; color:#bcd0f3; font-size:12px; font-weight:bold; letter-spacing:2px; text-transform:uppercase;">Portal SGC</p>
+                <h1 style="margin:0; color:#ffffff; font-size:26px; line-height:1.25; font-weight:800;">{{ title }}</h1>
+                <p style="margin:10px 0 0; color:#e8f0ff; font-size:14px; line-height:1.5;">Hallazgo {{ finding.code }}</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:28px;">
+                {% if action_expected %}
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 20px; background:#eef5ff; border:1px solid #c8dcf8; border-radius:12px;">
+                    <tr>
+                      <td style="padding:16px 18px;">
+                        <p style="margin:0 0 6px; color:#244a86; font-size:12px; font-weight:bold; letter-spacing:1.5px; text-transform:uppercase;">Accion requerida</p>
+                        <p style="margin:0; color:#172033; font-size:15px; line-height:1.55;">{{ action_expected }}</p>
+                      </td>
+                    </tr>
+                  </table>
+                {% endif %}
+
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:separate; border-spacing:0; border:1px solid #dbe5f1; border-radius:12px; overflow:hidden;">
+                  {% for label, value in details %}
+                    <tr>
+                      <td style="width:190px; padding:11px 14px; background:#f8fafd; border-bottom:1px solid #e6edf6; color:#61708a; font-size:12px; font-weight:bold; letter-spacing:.8px; text-transform:uppercase;">{{ label }}</td>
+                      <td style="padding:11px 14px; border-bottom:1px solid #e6edf6; color:#172033; font-size:14px; line-height:1.45;">{{ value }}</td>
+                    </tr>
+                  {% endfor %}
+                </table>
+
+                <div style="margin-top:22px;">
+                  <p style="margin:0 0 8px; color:#61708a; font-size:12px; font-weight:bold; letter-spacing:1.4px; text-transform:uppercase;">Descripcion</p>
+                  <p style="margin:0; color:#172033; font-size:15px; line-height:1.65;">{{ finding.description|linebreaksbr }}</p>
+                </div>
+
+                <table role="presentation" cellspacing="0" cellpadding="0" style="margin-top:26px;">
+                  <tr>
+                    <td style="background:#244a86; border-radius:10px;">
+                      <a href="{{ finding_url }}" style="display:inline-block; padding:13px 20px; color:#ffffff; font-size:14px; font-weight:bold; text-decoration:none;">Ver hallazgo</a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:18px 28px; background:#f8fafd; border-top:1px solid #e0e8f3;">
+                <p style="margin:0; color:#728097; font-size:12px; line-height:1.5;">
+                  Este correo fue generado automaticamente por el Portal SGC. Si el enlace no abre, ingresa al portal y busca el codigo {{ finding.code }}.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

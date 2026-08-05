@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -7,7 +9,9 @@ from django.utils import timezone
 
 from .models import Correction, CorrectiveAction, EffectivenessVerification, Evidence, Finding
 from .permissions import CORRECTION_GROUP, CORRECTIVE_ACTION_GROUP, QUERY_GROUP, REPRESENTATIVE_GROUP
-from .services import representative_emails
+from apps.core.models import NotificationSettings
+
+from .services import notify_assignment, representative_emails
 from .views import action_available, display_status_label
 
 
@@ -266,3 +270,24 @@ class FindingTreatmentReviewTests(TestCase):
         representative.groups.add(self.representative_group)
 
         self.assertIn("representative@example.com", representative_emails())
+
+    def test_assignment_notification_goes_only_to_assigned_user(self):
+        NotificationSettings.objects.update_or_create(pk=1, defaults={"email_alerts_enabled": True})
+        responsible = get_user_model().objects.create_user(
+            username="assigned-user",
+            email="assigned@example.com",
+            password="pass",
+        )
+        representative = get_user_model().objects.create_user(
+            username="notify-representative",
+            email="notify-representative@example.com",
+            password="pass",
+        )
+        representative.groups.add(self.representative_group)
+        finding = self.finding(status=Finding.Status.SEGUIMIENTO_ASIGNADO)
+
+        with patch("apps.findings.services.send_notification_email") as send_mock:
+            notify_assignment(finding, responsible, "seguimiento", due_at=timezone.now())
+
+        recipients = send_mock.call_args.kwargs["recipients"]
+        self.assertEqual(recipients, ["assigned@example.com"])

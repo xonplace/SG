@@ -1,4 +1,4 @@
-from django.core.mail import EmailMessage, get_connection
+from django.core.mail import EmailMultiAlternatives, get_connection
 
 from .models import NotificationSettings
 
@@ -23,18 +23,20 @@ def notification_connection(notification_settings=None):
     )
 
 
-def send_notification_email(subject, message, recipients, notification_settings=None, respect_enabled=True):
+def send_notification_email(subject, message, recipients, notification_settings=None, respect_enabled=True, html_message=""):
     notification_settings = notification_settings or NotificationSettings.current()
     recipients = list(dict.fromkeys(email for email in recipients if email))
     if respect_enabled and not notification_settings.email_alerts_enabled:
         return 0
     if not recipients or not notification_settings.is_smtp_configured:
         return 0
-    email = EmailMessage(
+    email = EmailMultiAlternatives(
         subject=subject,
         body=message,
         from_email=notification_from_email(notification_settings) or notification_settings.smtp_username,
         to=recipients,
         connection=notification_connection(notification_settings),
     )
+    if html_message:
+        email.attach_alternative(html_message, "text/html")
     return email.send(fail_silently=True)
