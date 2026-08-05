@@ -6,7 +6,8 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .models import Correction, CorrectiveAction, EffectivenessVerification, Evidence, Finding
-from .permissions import CORRECTION_GROUP, CORRECTIVE_ACTION_GROUP, QUERY_GROUP
+from .permissions import CORRECTION_GROUP, CORRECTIVE_ACTION_GROUP, QUERY_GROUP, REPRESENTATIVE_GROUP
+from .services import representative_emails
 from .views import action_available, display_status_label
 
 
@@ -21,6 +22,7 @@ class FindingTreatmentReviewTests(TestCase):
         self.query_group = Group.objects.create(name=QUERY_GROUP)
         self.correction_group = Group.objects.create(name=CORRECTION_GROUP)
         self.corrective_action_group = Group.objects.create(name=CORRECTIVE_ACTION_GROUP)
+        self.representative_group = Group.objects.create(name=REPRESENTATIVE_GROUP)
 
     def finding(self, *, status, classification=Finding.Classification.NO_CONFORMIDAD_MENOR):
         return Finding.objects.create(
@@ -254,3 +256,13 @@ class FindingTreatmentReviewTests(TestCase):
 
         self.assertEqual(response.status_code, 403)
         self.assertTrue(Finding.objects.filter(pk=finding.pk).exists())
+
+    def test_representative_group_users_are_notification_recipients(self):
+        representative = get_user_model().objects.create_user(
+            username="representative",
+            email="representative@example.com",
+            password="pass",
+        )
+        representative.groups.add(self.representative_group)
+
+        self.assertIn("representative@example.com", representative_emails())

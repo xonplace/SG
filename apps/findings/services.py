@@ -1,6 +1,7 @@
 from datetime import datetime, time, timedelta
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.urls import reverse
@@ -10,6 +11,7 @@ from apps.core.emailing import send_notification_email
 from apps.core.models import CompanyProfile, NotificationSettings
 
 from .models import Finding, FindingHistory, Holiday
+from .permissions import REPRESENTATIVE_GROUP
 
 
 def active_due_definitions():
@@ -132,6 +134,14 @@ def representative_emails():
         recipients.append(company.representative_email)
     if settings.REPRESENTANTE_GERENCIA_EMAIL:
         recipients.append(settings.REPRESENTANTE_GERENCIA_EMAIL)
+    representative_users = (
+        get_user_model()
+        .objects.filter(is_active=True)
+        .exclude(email="")
+        .filter(Q(groups__name=REPRESENTATIVE_GROUP) | Q(is_superuser=True))
+        .distinct()
+    )
+    recipients.extend(representative_users.values_list("email", flat=True))
     return list(dict.fromkeys(email for email in recipients if email))
 
 
