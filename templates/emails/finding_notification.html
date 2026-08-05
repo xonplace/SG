@@ -45,11 +45,29 @@
 
                 <table role="presentation" cellspacing="0" cellpadding="0" style="margin-top:26px;">
                   <tr>
-                    <td style="background:#244a86; border-radius:10px;">
-                      <a href="{{ finding_url }}" style="display:inline-block; padding:13px 20px; color:#ffffff; font-size:14px; font-weight:bold; text-decoration:none;">Ver hallazgo</a>
+                    <td align="left">
+                      <!--[if mso]>
+                      <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{ finding_url }}" style="height:44px;v-text-anchor:middle;width:150px;" arcsize="18%" stroke="f" fillcolor="#244a86">
+                        <w:anchorlock/>
+                        <center style="color:#ffffff;font-family:Arial, Helvetica, sans-serif;font-size:14px;font-weight:bold;">Ver hallazgo</center>
+                      </v:roundrect>
+                      <![endif]-->
+                      <!--[if !mso]><!-->
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                        <tr>
+                          <td align="center" bgcolor="#244a86" style="border-radius:10px; mso-padding-alt:0;">
+                            <a href="{{ finding_url }}" target="_blank" style="display:block; width:150px; padding:13px 0; color:#ffffff; font-family:Arial, Helvetica, sans-serif; font-size:14px; font-weight:bold; line-height:18px; text-align:center; text-decoration:none; border-radius:10px;">Ver hallazgo</a>
+                          </td>
+                        </tr>
+                      </table>
+                      <!--<![endif]-->
                     </td>
                   </tr>
                 </table>
+                <p style="margin:14px 0 0; color:#61708a; font-size:12px; line-height:1.5;">
+                  Enlace directo:
+                  <a href="{{ finding_url }}" target="_blank" style="color:#244a86; text-decoration:underline;">{{ finding_url }}</a>
+                </p>
               </td>
             </tr>
             <tr>
