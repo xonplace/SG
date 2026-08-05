@@ -9,6 +9,7 @@ urlpatterns = [
     path("health/", health, name="health"),
     path(settings.ADMIN_URL, admin.site.urls),
     path("cuentas/login/", PortalLoginView.as_view(), name="login"),
+    path("auth/callback/", sso_callback, name="sso_callback_auth"),
     path("cuentas/sso/callback/", sso_callback, name="sso_callback"),
     path("cuentas/", include("django.contrib.auth.urls")),
     path("usuarios/", include("apps.accounts.urls")),
