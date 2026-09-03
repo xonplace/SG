@@ -36,7 +36,7 @@
           {% if user.is_authenticated and company.show_sgc_menu %}
             <details class="sg-sidebar-group" {% if request.resolver_match.app_name == 'sgc' and request.resolver_match.url_name != 'training' and request.resolver_match.url_name != 'training_detail' and request.resolver_match.url_name != 'training_report' and request.resolver_match.url_name != 'training_report_export' and request.resolver_match.url_name != 'training_assign' and request.resolver_match.url_name != 'training_delete' %}open{% endif %}>
               <summary class="sg-sidebar-link cursor-pointer {% if request.resolver_match.app_name == 'sgc' and request.resolver_match.url_name != 'training' and request.resolver_match.url_name != 'training_detail' and request.resolver_match.url_name != 'training_report' and request.resolver_match.url_name != 'training_report_export' and request.resolver_match.url_name != 'training_assign' and request.resolver_match.url_name != 'training_delete' %}sg-sidebar-link-active{% endif %}">
-                <span class="sg-sidebar-icon" aria-hidden="true">
+                <span class="sg-sidebar-icon sg-sidebar-icon-system" aria-hidden="true">
                   <svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M14 3v4h4"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>
                 </span>
                 {{ company.sgc_menu_label }}
@@ -83,7 +83,7 @@
           {% if user.is_authenticated and company.show_training_module %}
             <details class="sg-sidebar-group" {% if request.resolver_match.app_name == 'sgc' and request.resolver_match.url_name == 'training' or request.resolver_match.url_name == 'my_training' or request.resolver_match.url_name == 'training_detail' or request.resolver_match.url_name == 'training_evaluation' or request.resolver_match.url_name == 'training_report' or request.resolver_match.url_name == 'training_assign' or request.resolver_match.url_name == 'training_delete' %}open{% endif %}>
               <summary class="sg-sidebar-link cursor-pointer {% if request.resolver_match.app_name == 'sgc' and request.resolver_match.url_name == 'training' or request.resolver_match.url_name == 'my_training' or request.resolver_match.url_name == 'training_detail' or request.resolver_match.url_name == 'training_evaluation' or request.resolver_match.url_name == 'training_report' or request.resolver_match.url_name == 'training_assign' or request.resolver_match.url_name == 'training_delete' %}sg-sidebar-link-active{% endif %}">
-                <span class="sg-sidebar-icon" aria-hidden="true">
+                <span class="sg-sidebar-icon sg-sidebar-icon-training" aria-hidden="true">
                   <svg viewBox="0 0 24 24"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-1.5z"/><path d="M8 7h7"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>
                 </span>
                 {{ company.training_label }}
@@ -101,7 +101,7 @@
           {% if company.show_findings_module and can_create_findings or company.show_findings_module and can_view_findings %}
           <details class="sg-sidebar-group" {% if request.resolver_match.app_name == 'findings' %}open{% endif %}>
             <summary class="sg-sidebar-link cursor-pointer {% if request.resolver_match.app_name == 'findings' %}sg-sidebar-link-active{% endif %}">
-              <span class="sg-sidebar-icon" aria-hidden="true">
+              <span class="sg-sidebar-icon sg-sidebar-icon-findings" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path d="M12 3l8 4v6c0 5-3.4 7.7-8 9-4.6-1.3-8-4-8-9V7z"/><path d="M12 8v5"/><path d="M12 17h.01"/></svg>
               </span>
               {{ company.findings_label }}
@@ -127,7 +127,7 @@
           {% if user.is_authenticated and company.show_activities_module %}
           <details class="sg-sidebar-group" {% if request.resolver_match.app_name == 'activities' %}open{% endif %}>
             <summary class="sg-sidebar-link cursor-pointer {% if request.resolver_match.app_name == 'activities' %}sg-sidebar-link-active{% endif %}">
-              <span class="sg-sidebar-icon" aria-hidden="true">
+              <span class="sg-sidebar-icon sg-sidebar-icon-activities" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
               </span>
               {{ company.activities_label }}
@@ -150,7 +150,7 @@
           {% if can_manage_system or can_manage_users or can_manage_sgc_content or can_manage_sgc_dates or can_manage_sgc_documents or can_manage_sgc_processes or can_manage_sgc_updates or can_manage_sgc_certificates or can_manage_sgc_forms or can_manage_sgc_identity %}
             <details class="sg-sidebar-group" {% if request.resolver_match.app_name == 'maintainers' or request.resolver_match.app_name == 'accounts' or request.resolver_match.url_name == 'important_dates' or request.resolver_match.url_name == 'document_control_dashboard' or request.resolver_match.url_name == 'document_matrix' or request.resolver_match.url_name == 'obsolete_documents' or request.resolver_match.url_name == 'obsolete_processes' or request.resolver_match.url_name == 'document_delete' or request.resolver_match.url_name == 'process_delete' %}open{% endif %}>
               <summary class="sg-sidebar-link cursor-pointer {% if request.resolver_match.app_name == 'maintainers' or request.resolver_match.app_name == 'accounts' or request.resolver_match.url_name == 'important_dates' or request.resolver_match.url_name == 'document_control_dashboard' or request.resolver_match.url_name == 'document_matrix' or request.resolver_match.url_name == 'obsolete_documents' or request.resolver_match.url_name == 'obsolete_processes' or request.resolver_match.url_name == 'document_delete' or request.resolver_match.url_name == 'process_delete' %}sg-sidebar-link-active{% endif %}">
-                <span class="sg-sidebar-icon" aria-hidden="true">
+                <span class="sg-sidebar-icon sg-sidebar-icon-maintainers" aria-hidden="true">
                   <svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/><path d="M7 4v6"/><path d="M17 14v6"/></svg>
                 </span>
                 {{ company.maintainers_label }}
@@ -210,7 +210,7 @@
             <form method="post" action="{% url 'logout' %}">
               {% csrf_token %}
               <button type="submit" class="sg-sidebar-link w-full">
-                <span class="sg-sidebar-icon" aria-hidden="true">
+                <span class="sg-sidebar-icon sg-sidebar-icon-exit" aria-hidden="true">
                   <svg viewBox="0 0 24 24"><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M21 3v18"/></svg>
                 </span>
                 Salir
@@ -218,7 +218,7 @@
             </form>
           {% else %}
             <a href="{% url 'login' %}" class="sg-sidebar-link">
-              <span class="sg-sidebar-icon" aria-hidden="true">
+              <span class="sg-sidebar-icon sg-sidebar-icon-exit" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path d="M14 8l4 4-4 4"/><path d="M18 12H6"/><path d="M6 4h-1a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h1"/></svg>
               </span>
               Entrar
