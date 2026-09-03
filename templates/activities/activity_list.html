@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Actividades SGC | Sistema de gestion{% endblock %}
+
+{% block content %}
+<section class="sg-page">
+  <div class="sg-page-header">
+    <div>
+      <p class="sg-section-kicker">Actividades SGC</p>
+      <h1>{{ page_title }}</h1>
+      <p>{{ page_intro }}</p>
+    </div>
+    {% if can_create_activity %}
+      <a href="{% url 'activities:create' %}" class="sg-button-brand">Nueva actividad</a>
+    {% endif %}
+  </div>
+
+  <div class="mb-5 grid gap-4 md:grid-cols-4">
+    <article class="sg-card">
+      <p class="sg-section-kicker">Total</p>
+      <strong class="mt-2 block text-3xl">{{ counts.total }}</strong>
+      <span class="text-sm text-slate-500">Actividades registradas</span>
+    </article>
+    <article class="sg-card">
+      <p class="sg-section-kicker">Abiertas</p>
+      <strong class="mt-2 block text-3xl">{{ counts.open }}</strong>
+      <span class="text-sm text-slate-500">Con seguimiento activo</span>
+    </article>
+    <article class="sg-card">
+      <p class="sg-section-kicker">Cerradas</p>
+      <strong class="mt-2 block text-3xl">{{ counts.closed }}</strong>
+      <span class="text-sm text-slate-500">Validadas y cerradas</span>
+    </article>
+    <article class="sg-card">
+      <p class="sg-section-kicker">Vencidas</p>
+      <strong class="mt-2 block text-3xl">{{ counts.overdue }}</strong>
+      <span class="text-sm text-slate-500">Requieren atencion</span>
+    </article>
+  </div>
+
+  <form method="get" class="sg-filter-bar">
+    <div class="sg-filter-grid-wide">
+      <div class="sg-filter-field">
+        <label class="sg-filter-label" for="activity-search">Buscar</label>
+        <input id="activity-search" name="q" value="{{ query }}" class="sg-filter-control" placeholder="Codigo, actividad o descripcion">
+      </div>
+      <div class="sg-filter-field">
+        <label class="sg-filter-label" for="activity-status">Estado</label>
+        <select id="activity-status" name="status" class="sg-filter-control">
+          <option value="">Todos</option>
+          {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="sg-filter-field">
+        <label class="sg-filter-label" for="activity-origin">Origen</label>
+        <select id="activity-origin" name="origin" class="sg-filter-control">
+          <option value="">Todos</option>
+          {% for value, label in origin_choices %}
+            <option value="{{ value }}" {% if selected_origin == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="sg-filter-actions">
+        <button class="sg-button-compact-primary" type="submit">Filtrar</button>
+        <a href="{% url 'activities:list' %}" class="sg-button-compact">Limpiar</a>
+      </div>
+    </div>
+  </form>
+
+  <div class="sg-card overflow-hidden p-0">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200 text-sm">
+        <thead class="bg-slate-50 text-left text-xs font-bold uppercase tracking-widest text-slate-500">
+          <tr>
+            <th class="px-5 py-4">Codigo</th>
+            <th class="px-5 py-4">Actividad</th>
+            <th class="px-5 py-4">Responsable</th>
+            <th class="px-5 py-4">Seguimiento</th>
+            <th class="px-5 py-4">Entrega</th>
+            <th class="px-5 py-4">Estado</th>
+            <th class="px-5 py-4 text-right">Accion</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 bg-white">
+          {% for activity in activities %}
+            <tr>
+              <td class="px-5 py-4 font-bold text-blue-700">{{ activity.code }}</td>
+              <td class="px-5 py-4">
+                <p class="font-semibold text-slate-950">{{ activity.title }}</p>
+                <p class="mt-1 text-xs text-slate-500">{{ activity.origin_label }}</p>
+              </td>
+              <td class="px-5 py-4">{{ activity.responsible_names|default:"-" }}</td>
+              <td class="px-5 py-4">{{ activity.follow_up_due_at|date:"d-m-Y H:i"|default:"-" }}</td>
+              <td class="px-5 py-4">{{ activity.delivery_due_at|date:"d-m-Y H:i"|default:"-" }}</td>
+              <td class="px-5 py-4">
+                <span class="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">{{ activity.get_status_display }}</span>
+              </td>
+              <td class="px-5 py-4 text-right">
+                <a href="{% url 'activities:detail' activity.pk %}" class="sg-row-action">Abrir</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="px-5 py-12 text-center text-slate-500">Aun no hay actividades registradas.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock %}

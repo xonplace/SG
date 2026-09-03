@@ -17,8 +17,11 @@ from apps.findings.permissions import (
     can_manage_sgc_identity,
     can_manage_updates,
     can_manage_users,
+    can_create_activities,
+    can_manage_activities,
     can_view_documents,
     can_view_findings,
+    can_view_activities,
     can_view_reports,
     is_administrator,
     is_representative,
@@ -108,15 +111,24 @@ def _topbar_notifications(user):
             }
         )
 
+    activity_items = _activity_notifications(user)
     training_items = _training_assignment_notifications(user)
     document_items = _document_control_notifications(user)
     date_items = _important_date_notifications()
     update_items = _update_notifications()
-    secondary_items = [*training_items, *document_items, *date_items, *update_items]
+    secondary_items = [*activity_items, *training_items, *document_items, *date_items, *update_items]
     available_slots = max(8 - len(items), 0)
     items.extend(secondary_items[:available_slots])
     total = finding_total + len(secondary_items)
     return {"items": items, "count": total, "has_more": total > len(items)}
+
+
+def _activity_notifications(user):
+    try:
+        from apps.activities.services import activity_notifications_for_user
+    except Exception:
+        return []
+    return activity_notifications_for_user(user)
 
 
 def _training_is_completed(user, content):
@@ -320,6 +332,9 @@ def company_profile(request):
         "can_view_sgc_documents": can_view_documents(request.user),
         "can_create_findings": can_create_findings(request.user),
         "can_view_findings": can_view_findings(request.user),
+        "can_view_activities": can_view_activities(request.user),
+        "can_create_activities": can_create_activities(request.user),
+        "can_manage_activities": can_manage_activities(request.user),
         "can_view_reports": can_view_reports(request.user),
         "topbar_notifications": notifications,
     }

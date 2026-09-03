@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} | Sistema de gestion{% endblock %}
+
+{% block content %}
+<section class="sg-form-page">
+  <article class="sg-form-panel">
+    <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div>
+        <p class="sg-section-kicker">Actividades SGC</p>
+        <h1 class="mt-2 text-3xl font-extrabold text-slate-950">{{ title }}</h1>
+        {% if activity %}<p class="mt-2 text-sm text-slate-500">{{ activity.title }}</p>{% endif %}
+      </div>
+      <a href="{% if activity %}{% url 'activities:detail' activity.pk %}{% else %}{% url 'activities:list' %}{% endif %}" class="sg-button-secondary">Volver</a>
+    </div>
+
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="sg-form-grid">
+        {% for field in form %}
+          <div class="sg-form-field {% if field.field.widget.input_type == 'textarea' or field.name == 'description' or field.name == 'result' or field.name == 'progress_text' or field.name == 'review_observations' %}sg-form-field-wide{% endif %}">
+            <label class="sg-form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+            {% if field.name == "responsible_users" %}
+              <div class="sg-dual-picker" data-dual-picker>
+                <section class="sg-dual-panel">
+                  <div class="sg-dual-panel-head">
+                    <strong>Usuarios disponibles</strong>
+                    <small>Selecciona un usuario y agregalo</small>
+                  </div>
+                  <select class="sg-dual-select" data-dual-select>
+                    <option value="">Selecciona un usuario</option>
+                    {% for choice in field %}
+                      <option value="{{ choice.data.value }}">{{ choice.choice_label }}</option>
+                    {% endfor %}
+                  </select>
+                  <div class="hidden" data-dual-inputs>
+                    {% for choice in field %}
+                      <span data-dual-source="{{ choice.data.value }}" data-dual-label="{{ choice.choice_label }}">{{ choice.tag }}</span>
+                    {% endfor %}
+                  </div>
+                </section>
+
+                <div class="sg-dual-actions" aria-label="Acciones responsables">
+                  <button type="button" class="sg-dual-move" data-dual-add disabled>&rarr;</button>
+                  <button type="button" class="sg-dual-move" data-dual-remove disabled>&larr;</button>
+                </div>
+
+                <section class="sg-dual-panel">
+                  <div class="sg-dual-panel-head">
+                    <strong>Responsables asignados</strong>
+                    <small>Participan en la actividad</small>
+                  </div>
+                  <div class="sg-dual-list sg-dual-list-selected" data-dual-selected></div>
+                </section>
+              </div>
+            {% else %}
+              {{ field }}
+            {% endif %}
+            {% if field.help_text %}<p class="sg-form-help">{{ field.help_text }}</p>{% endif %}
+            {% for error in field.errors %}<p class="sg-form-error">{{ error }}</p>{% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+      {% if form.non_field_errors %}
+        <div class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ form.non_field_errors }}</div>
+      {% endif %}
+      <div class="sg-form-actions">
+        <a href="{% if activity %}{% url 'activities:detail' activity.pk %}{% else %}{% url 'activities:list' %}{% endif %}" class="sg-button-secondary">Cancelar</a>
+        <button class="sg-button-brand" type="submit">Guardar</button>
+      </div>
+    </form>
+  </article>
+</section>
+<script>
+  (function () {
+    function initDualPicker(picker) {
+      var select = picker.querySelector("[data-dual-select]");
+      var inputs = picker.querySelector("[data-dual-inputs]");
+      var selected = picker.querySelector("[data-dual-selected]");
+      var addButton = picker.querySelector("[data-dual-add]");
+      var removeButton = picker.querySelector("[data-dual-remove]");
+      var activeOption = null;
+
+      function setActive(option, selectedItem) {
+        picker.querySelectorAll("[data-dual-option]").forEach(function (item) {
+          item.classList.remove("sg-dual-option-active");
+        });
+        activeOption = selectedItem || option;
+        if (activeOption) {
+          activeOption.classList.add("sg-dual-option-active");
+        }
+        refreshButtons();
+      }
+
+      function refreshButtons() {
+        addButton.disabled = !select.value;
+        removeButton.disabled = !activeOption || activeOption.parentElement !== selected;
+      }
+
+      function addSelectedUser() {
+        var value = select.value;
+        if (!value) return;
+        var source = inputs.querySelector("[data-dual-source='" + value + "']");
+        if (!source) return;
+        var input = source.querySelector("input[type='checkbox']");
+        if (input) input.checked = true;
+        var item = document.createElement("div");
+        item.className = "sg-dual-option";
+        item.setAttribute("role", "button");
+        item.setAttribute("tabindex", "0");
+        item.setAttribute("data-dual-option", "");
+        item.setAttribute("data-dual-value", value);
+        item.innerHTML = "<strong></strong>";
+        item.querySelector("strong").textContent = source.getAttribute("data-dual-label");
+        selected.appendChild(item);
+        var option = select.querySelector("option[value='" + value + "']");
+        if (option) option.disabled = true;
+        select.value = "";
+        bindSelectedItem(item);
+        setActive(null, item);
+      }
+
+      function removeSelectedUser() {
+        if (!activeOption || activeOption.parentElement !== selected) return;
+        var value = activeOption.getAttribute("data-dual-value");
+        var source = inputs.querySelector("[data-dual-source='" + value + "']");
+        if (source) {
+          var input = source.querySelector("input[type='checkbox']");
+          if (input) input.checked = false;
+        }
+        var option = select.querySelector("option[value='" + value + "']");
+        if (option) option.disabled = false;
+        activeOption.remove();
+        activeOption = null;
+        refreshButtons();
+      }
+
+      function bindSelectedItem(item) {
+        item.addEventListener("click", function () {
+          setActive(null, item);
+        });
+        item.addEventListener("keydown", function (event) {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            setActive(null, item);
+          }
+        });
+      }
+
+      inputs.querySelectorAll("[data-dual-source]").forEach(function (source) {
+        var input = source.querySelector("input[type='checkbox']");
+        if (input && input.checked) {
+          select.value = input.value;
+          addSelectedUser();
+        }
+      });
+
+      select.addEventListener("change", function () {
+        activeOption = null;
+        refreshButtons();
+      });
+      addButton.addEventListener("click", function () {
+        addSelectedUser();
+      });
+      removeButton.addEventListener("click", function () {
+        removeSelectedUser();
+      });
+      refreshButtons();
+    }
+
+    document.querySelectorAll("[data-dual-picker]").forEach(initDualPicker);
+  })();
+</script>
+{% endblock %}

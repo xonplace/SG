@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}{{ activity.code }} | Sistema de gestion{% endblock %}
+
+{% block content %}
+<section class="sg-page">
+  <div class="sg-page-header">
+    <div>
+      <p class="sg-section-kicker">{{ activity.code }}</p>
+      <h1>Detalle de la actividad</h1>
+      <p>{{ activity.title }}</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="sg-detail-status">{{ activity.get_status_display }}</span>
+      {% for action in actions %}
+        <a href="{{ action.url }}" class="{% if forloop.first %}sg-button-primary{% else %}sg-button-secondary{% endif %}">{{ action.label }}</a>
+      {% empty %}
+        <span class="text-sm text-slate-500">Sin acciones pendientes para tu rol.</span>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="mb-6 sg-card">
+    <div class="mb-3 flex items-center justify-between">
+      <h2 class="sg-section-title">Avance general</h2>
+      <span class="text-sm font-bold text-blue-700">{{ activity.progress_percentage }}%</span>
+    </div>
+    <div class="h-3 overflow-hidden rounded-full bg-slate-100">
+      <div class="h-full rounded-full bg-blue-600" style="width: {{ activity.progress_percentage }}%"></div>
+    </div>
+  </div>
+
+  <div class="grid gap-6 lg:grid-cols-[340px_1fr]">
+    <aside class="sg-card">
+      <h2 class="sg-section-title mb-4">Antecedentes</h2>
+      <dl class="space-y-4 text-sm">
+        <div><dt class="text-slate-500">Origen</dt><dd class="font-semibold">{{ activity.origin_label }}</dd></div>
+        <div><dt class="text-slate-500">Prioridad</dt><dd>{{ activity.get_priority_display }}</dd></div>
+        <div><dt class="text-slate-500">Responsables actividad</dt><dd>{{ activity.responsible_names|default:"-" }}</dd></div>
+        <div><dt class="text-slate-500">Asignado por</dt><dd>{{ activity.assigned_by|default:"-" }}</dd></div>
+        <div><dt class="text-slate-500">Fecha seguimiento</dt><dd>{{ activity.follow_up_due_at|date:"d-m-Y H:i"|default:"-" }}</dd></div>
+        <div><dt class="text-slate-500">Fecha entrega</dt><dd>{{ activity.delivery_due_at|date:"d-m-Y H:i"|default:"-" }}</dd></div>
+        <div><dt class="text-slate-500">Responsable revision</dt><dd>{{ activity.review_assigned_to|default:"-" }}</dd></div>
+        <div><dt class="text-slate-500">Plazo revision</dt><dd>{{ activity.review_due_at|date:"d-m-Y H:i"|default:"-" }}</dd></div>
+      </dl>
+    </aside>
+
+    <div class="space-y-6">
+      <article class="sg-card">
+        <h2 class="sg-section-title mb-3">Descripcion</h2>
+        <p class="whitespace-pre-line text-sm leading-6 text-slate-700">{{ activity.description }}</p>
+      </article>
+
+      <article class="sg-card">
+        <h2 class="sg-section-title mb-3">Resultado informado</h2>
+        <p class="whitespace-pre-line text-sm leading-6 text-slate-700">{{ activity.result|default:"Pendiente de informar resultado." }}</p>
+        {% if activity.submitted_at %}
+          <p class="mt-3 text-xs text-slate-500">Informado el {{ activity.submitted_at|date:"d-m-Y H:i" }}</p>
+        {% endif %}
+        {% if activity.review_observations %}
+          <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <strong>Observaciones de revision:</strong>
+            <p class="mt-1 whitespace-pre-line">{{ activity.review_observations }}</p>
+          </div>
+        {% endif %}
+      </article>
+
+      <article class="sg-card">
+        <h2 class="sg-section-title mb-4">Avances registrados</h2>
+        <div class="space-y-3">
+          {% for progress in progress_entries %}
+            <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+              <div class="flex flex-wrap justify-between gap-2">
+                <strong>{{ progress.progress_date|date:"d-m-Y" }}</strong>
+                <span class="text-slate-500">{{ progress.created_by|default:"-" }}</span>
+              </div>
+              <p class="mt-2 whitespace-pre-line text-slate-700">{{ progress.progress_text }}</p>
+            </div>
+          {% empty %}
+            <p class="text-sm text-slate-500">Sin avances registrados.</p>
+          {% endfor %}
+        </div>
+      </article>
+    </div>
+  </div>
+
+  <div class="mt-6 grid gap-6 lg:grid-cols-2">
+    <article class="sg-card">
+      <h2 class="sg-section-title mb-4">Evidencias</h2>
+      <div class="space-y-2">
+        {% for attachment in attachments %}
+          <div class="flex flex-col gap-2 rounded-lg border border-slate-200 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+            <div class="min-w-0">
+              <p class="font-semibold">{{ attachment.description|default:attachment.file.name }}</p>
+              <p class="break-all text-xs text-slate-500">{{ attachment.file.name }}</p>
+            </div>
+            <a href="{{ attachment.file.url }}" class="sg-row-action" target="_blank" rel="noopener">Ver</a>
+          </div>
+        {% empty %}
+          <p class="text-sm text-slate-500">Sin evidencias cargadas.</p>
+        {% endfor %}
+      </div>
+    </article>
+
+    <article class="sg-card">
+      <h2 class="sg-section-title mb-4">Historial</h2>
+      <div class="space-y-3">
+        {% for item in history %}
+          <div class="border-l border-slate-300 pl-4 text-sm">
+            <p class="font-semibold">{{ item.action }}</p>
+            <p class="text-xs text-slate-500">{{ item.created_at|date:"d-m-Y H:i" }}{% if item.user %} - {{ item.user }}{% endif %}</p>
+            {% if item.comment %}<p class="mt-1 whitespace-pre-line text-slate-600">{{ item.comment }}</p>{% endif %}
+          </div>
+        {% empty %}
+          <p class="text-sm text-slate-500">Sin historial registrado.</p>
+        {% endfor %}
+      </div>
+    </article>
+  </div>
+</section>
+{% endblock %}

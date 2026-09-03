@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/output.css' %}?v=20260708-v1">
+    <link rel="stylesheet" href="{% static 'css/output.css' %}?v=20260903-v1">
     <style>
       :root {
         --sg-primary: {{ company.primary_color|default:"#2271b1" }};
@@ -22,13 +22,15 @@
       }
     </style>
   </head>
-  <body>
+  <body class="sg-sidebar-collapsed">
     <div class="sg-app-shell min-h-screen md:flex">
       <aside class="sg-sidebar">
-        <a href="{% if user.is_authenticated %}{% url default_authenticated_url %}{% else %}/{% endif %}" class="sg-sidebar-brand">
-          <span class="text-sm font-semibold uppercase tracking-wide text-white">{{ company.system_name }}</span>
-          <span class="text-xs text-neutral-400">{{ company.company_name }}</span>
-        </a>
+        <div class="sg-sidebar-head">
+          <a href="{% if user.is_authenticated %}{% url default_authenticated_url %}{% else %}/{% endif %}" class="sg-sidebar-brand">
+            <span class="sg-sidebar-text text-sm font-semibold uppercase tracking-wide text-white">{{ company.system_name }}</span>
+            <span class="sg-sidebar-text text-xs text-neutral-400">{{ company.company_name }}</span>
+          </a>
+        </div>
 
         <nav class="sg-sidebar-nav">
           {% if user.is_authenticated and company.show_sgc_menu %}
@@ -118,6 +120,29 @@
               {% endif %}
               {% if user.is_authenticated and can_view_reports %}
                 <a href="{% url 'findings:reports' %}" class="sg-sidebar-sublink {% if request.resolver_match.url_name == 'reports' %}sg-sidebar-sublink-active{% endif %}">{{ company.reports_label }}</a>
+              {% endif %}
+            </div>
+          </details>
+          {% endif %}
+          {% if user.is_authenticated and company.show_activities_module %}
+          <details class="sg-sidebar-group" {% if request.resolver_match.app_name == 'activities' %}open{% endif %}>
+            <summary class="sg-sidebar-link cursor-pointer {% if request.resolver_match.app_name == 'activities' %}sg-sidebar-link-active{% endif %}">
+              <span class="sg-sidebar-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
+              </span>
+              {{ company.activities_label }}
+              <span class="sg-sidebar-caret">v</span>
+            </summary>
+            <div class="sg-sidebar-subnav">
+              {% if can_view_activities or can_manage_activities %}
+                <a href="{% url 'activities:list' %}" class="sg-sidebar-sublink {% if request.resolver_match.app_name == 'activities' and request.resolver_match.url_name == 'list' %}sg-sidebar-sublink-active{% endif %}">Bandeja</a>
+              {% endif %}
+              {% if can_create_activities or can_manage_activities %}
+                <a href="{% url 'activities:create' %}" class="sg-sidebar-sublink {% if request.resolver_match.app_name == 'activities' and request.resolver_match.url_name == 'create' %}sg-sidebar-sublink-active{% endif %}">Nueva actividad</a>
+              {% endif %}
+              <a href="{% url 'activities:my_tasks' %}" class="sg-sidebar-sublink {% if request.resolver_match.app_name == 'activities' and request.resolver_match.url_name == 'my_tasks' %}sg-sidebar-sublink-active{% endif %}">Mis actividades</a>
+              {% if can_view_activities or can_manage_activities %}
+                <a href="{% url 'activities:due' %}" class="sg-sidebar-sublink {% if request.resolver_match.app_name == 'activities' and request.resolver_match.url_name == 'due' %}sg-sidebar-sublink-active{% endif %}">Vencidas</a>
               {% endif %}
             </div>
           </details>

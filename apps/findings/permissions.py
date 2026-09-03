@@ -32,6 +32,9 @@ PERMISSION_PERFORM_CORRECTION = "perform_correction"
 PERMISSION_PERFORM_CORRECTIVE_ACTION = "perform_corrective_action"
 PERMISSION_PERFORM_VERIFICATION = "perform_verification"
 PERMISSION_VIEW_REPORTS = "view_reports"
+PERMISSION_VIEW_ACTIVITIES = "view_activities"
+PERMISSION_CREATE_ACTIVITIES = "create_activities"
+PERMISSION_MANAGE_ACTIVITIES = "manage_activities"
 
 
 PERMISSION_DEFINITIONS = [
@@ -70,6 +73,9 @@ PERMISSION_DEFINITIONS = [
     ),
     (PERMISSION_PERFORM_VERIFICATION, "Registrar seguimiento y verificacion", "Hallazgos"),
     (PERMISSION_VIEW_REPORTS, "Consultar reportes y registros", "Reportes"),
+    (PERMISSION_VIEW_ACTIVITIES, "Ver actividades planificadas del SGC", "Actividades SGC"),
+    (PERMISSION_CREATE_ACTIVITIES, "Crear actividades planificadas del SGC", "Actividades SGC"),
+    (PERMISSION_MANAGE_ACTIVITIES, "Asignar, revisar y cerrar actividades del SGC", "Actividades SGC"),
 ]
 
 
@@ -93,6 +99,9 @@ DEFAULT_ROLE_PERMISSIONS = {
         PERMISSION_PERFORM_CORRECTIVE_ACTION,
         PERMISSION_PERFORM_VERIFICATION,
         PERMISSION_VIEW_REPORTS,
+        PERMISSION_VIEW_ACTIVITIES,
+        PERMISSION_CREATE_ACTIVITIES,
+        PERMISSION_MANAGE_ACTIVITIES,
     },
     CORRECTION_GROUP: {
         PERMISSION_PORTAL_ACCESS,
@@ -228,6 +237,18 @@ def is_administrator(user):
 
 def can_view_findings(user):
     return user_has_permission(user, PERMISSION_VIEW_FINDINGS)
+
+
+def can_view_activities(user):
+    return user_has_permission(user, PERMISSION_VIEW_ACTIVITIES)
+
+
+def can_create_activities(user):
+    return user_has_permission(user, PERMISSION_CREATE_ACTIVITIES)
+
+
+def can_manage_activities(user):
+    return user_has_permission(user, PERMISSION_MANAGE_ACTIVITIES)
 
 
 def assigned_or_representative(user, assigned_user):

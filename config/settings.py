@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.core",
     "apps.findings",
+    "apps.activities",
     "apps.maintainers",
     "apps.sgc",
 ]

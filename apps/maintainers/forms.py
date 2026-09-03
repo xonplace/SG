@@ -129,6 +129,7 @@ class SystemTextForm(StyledMaintainerForm):
             "processes_label",
             "updates_label",
             "training_label",
+            "activities_label",
             "findings_label",
             "findings_board_label",
             "new_finding_label",
@@ -158,6 +159,7 @@ class SystemTextForm(StyledMaintainerForm):
             "processes_label": "Menu Procesos",
             "updates_label": "Menu Comunicados",
             "training_label": "Menu Capacitaciones",
+            "activities_label": "Menu Actividades SGC",
             "findings_label": "Menu Hallazgos",
             "findings_board_label": "Submenu Bandeja",
             "new_finding_label": "Submenu Nuevo hallazgo",
@@ -204,6 +206,7 @@ class ModuleSettingsForm(StyledMaintainerForm):
             "show_updates_module",
             "show_processes_module",
             "show_training_module",
+            "show_activities_module",
         ]
         labels = {
             "show_findings_module": "Mostrar modulo de hallazgos",
@@ -212,6 +215,7 @@ class ModuleSettingsForm(StyledMaintainerForm):
             "show_updates_module": "Mostrar comunicados",
             "show_processes_module": "Mostrar procesos",
             "show_training_module": "Mostrar capacitaciones",
+            "show_activities_module": "Mostrar actividades SGC",
         }
 
 
