@@ -79,6 +79,8 @@ class Activity(TimeStampedModel):
     )
     follow_up_due_at = models.DateTimeField("fecha de seguimiento", null=True, blank=True)
     delivery_due_at = models.DateTimeField("fecha de entrega", null=True, blank=True)
+    delivery_alert_24h_sent = models.BooleanField(default=False)
+    delivery_overdue_alert_sent = models.BooleanField(default=False)
     result = models.TextField("resultado final", blank=True)
     submitted_at = models.DateTimeField("fecha resultado informado", null=True, blank=True)
     review_assigned_to = models.ForeignKey(
@@ -98,6 +100,8 @@ class Activity(TimeStampedModel):
         blank=True,
     )
     review_due_at = models.DateTimeField("plazo revision y cierre", null=True, blank=True)
+    review_alert_24h_sent = models.BooleanField(default=False)
+    review_overdue_alert_sent = models.BooleanField(default=False)
     review_observations = models.TextField("observaciones de revision", blank=True)
     closed_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,

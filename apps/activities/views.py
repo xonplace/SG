@@ -7,7 +7,14 @@ from django.utils import timezone
 
 from apps.findings.permissions import can_create_activities, can_manage_activities, can_view_activities
 
-from .forms import ActivityCreateForm, ActivityProgressForm, ActivityResultForm, ActivityReviewAssignForm, ActivityReviewForm
+from .forms import (
+    ActivityCreateForm,
+    ActivityProgressForm,
+    ActivityResultForm,
+    ActivityReviewAssignForm,
+    ActivityReviewForm,
+    ActivityDeadlineRescheduleForm,
+)
 from .models import Activity, ActivityAttachment, ActivityHistory, ActivityProgress
 from .services import notify_activity_assignment, notify_activity_returned, notify_activity_review_assignment
 
@@ -178,6 +185,14 @@ def activity_detail(request, pk):
         actions.append({"label": "Asignar revision final", "url": reverse("activities:assign_review", args=[activity.pk])})
     if (activity.review_assigned_to_id == request.user.id or can_manage_activities(request.user)) and activity.status == Activity.Status.REVIEW_ASSIGNED:
         actions.append({"label": "Revisar y cerrar", "url": reverse("activities:review", args=[activity.pk])})
+    can_reschedule = activity.review_assigned_to_id == request.user.id or can_manage_activities(request.user)
+    if can_reschedule and activity.status in [
+        Activity.Status.ASSIGNED,
+        Activity.Status.IN_PROGRESS,
+        Activity.Status.RETURNED,
+        Activity.Status.REVIEW_ASSIGNED,
+    ]:
+        actions.append({"label": "Reprogramar plazo", "url": reverse("activities:reschedule_deadline", args=[activity.pk])})
 
     return render(
         request,
@@ -227,7 +242,12 @@ def activity_result(request, pk):
         activity = form.save(commit=False)
         activity.status = Activity.Status.REVIEW_ASSIGNED if activity.review_assigned_to else Activity.Status.RESULT_SUBMITTED
         activity.submitted_at = timezone.now()
-        activity.save(update_fields=["result", "status", "submitted_at", "updated_at"])
+        update_fields = ["result", "status", "submitted_at", "updated_at"]
+        if activity.review_assigned_to:
+            activity.review_alert_24h_sent = False
+            activity.review_overdue_alert_sent = False
+            update_fields.extend(["review_alert_24h_sent", "review_overdue_alert_sent"])
+        activity.save(update_fields=update_fields)
         _save_optional_attachment(activity, request.user, form.cleaned_data.get("file"), form.cleaned_data.get("file_description", ""))
         _add_history(activity, request.user, "Resultado informado", previous_status=previous_status, comment=activity.result)
         if activity.review_assigned_to:
@@ -251,12 +271,77 @@ def activity_assign_review(request, pk):
         activity = form.save(commit=False)
         activity.review_assigned_by = request.user
         activity.status = Activity.Status.REVIEW_ASSIGNED
-        activity.save(update_fields=["review_assigned_to", "review_assigned_by", "review_due_at", "status", "updated_at"])
+        activity.review_alert_24h_sent = False
+        activity.review_overdue_alert_sent = False
+        activity.save(update_fields=[
+            "review_assigned_to",
+            "review_assigned_by",
+            "review_due_at",
+            "review_alert_24h_sent",
+            "review_overdue_alert_sent",
+            "status",
+            "updated_at",
+        ])
         _add_history(activity, request.user, "Revision final asignada", previous_status=previous_status)
         notify_activity_review_assignment(activity)
         messages.success(request, "Responsable de revision asignado correctamente.")
         return redirect("activities:detail", activity.pk)
     return render(request, "activities/activity_form.html", {"form": form, "title": f"Asignar revision final {activity.code}", "activity": activity})
+
+
+@login_required
+def activity_reschedule_deadline(request, pk):
+    activity = get_object_or_404(_activity_scope(request.user), pk=pk)
+    can_reschedule = activity.review_assigned_to_id == request.user.id or can_manage_activities(request.user)
+    allowed_statuses = [
+        Activity.Status.ASSIGNED,
+        Activity.Status.IN_PROGRESS,
+        Activity.Status.RETURNED,
+        Activity.Status.REVIEW_ASSIGNED,
+    ]
+    if not can_reschedule or activity.status not in allowed_statuses:
+        messages.error(request, "No puedes reprogramar el plazo de esta actividad.")
+        return redirect("activities:detail", activity.pk)
+
+    is_review = activity.status == Activity.Status.REVIEW_ASSIGNED
+    current_due = activity.review_due_at if is_review else activity.delivery_due_at
+    form = ActivityDeadlineRescheduleForm(
+        request.POST or None,
+        initial={"new_due_at": current_due},
+    )
+    if request.method == "POST" and form.is_valid():
+        previous_due = current_due
+        new_due = form.cleaned_data["new_due_at"]
+        reason = form.cleaned_data["reason"].strip()
+        if is_review:
+            activity.review_due_at = new_due
+            activity.review_alert_24h_sent = False
+            activity.review_overdue_alert_sent = False
+            update_fields = ["review_due_at", "review_alert_24h_sent", "review_overdue_alert_sent"]
+            action = "Revision reprogramada"
+        else:
+            activity.delivery_due_at = new_due
+            activity.delivery_alert_24h_sent = False
+            activity.delivery_overdue_alert_sent = False
+            update_fields = ["delivery_due_at", "delivery_alert_24h_sent", "delivery_overdue_alert_sent"]
+            action = "Plazo de entrega reprogramado"
+        activity.save(update_fields=[*update_fields, "updated_at"])
+        previous_label = timezone.localtime(previous_due).strftime("%d-%m-%Y %H:%M") if previous_due else "Sin fecha"
+        new_label = timezone.localtime(new_due).strftime("%d-%m-%Y %H:%M")
+        _add_history(
+            activity,
+            request.user,
+            action,
+            comment=f"Fecha anterior: {previous_label}\nNueva fecha: {new_label}\nMotivo: {reason}",
+        )
+        messages.success(request, "El plazo fue reprogramado correctamente y quedo registrado en el historial.")
+        return redirect("activities:detail", activity.pk)
+
+    return render(
+        request,
+        "activities/activity_form.html",
+        {"form": form, "title": f"Reprogramar plazo {activity.code}", "activity": activity},
+    )
 
 
 @login_required
@@ -281,7 +366,16 @@ def activity_review(request, pk):
             new_due = form.cleaned_data.get("new_delivery_due_at")
             if new_due:
                 activity.delivery_due_at = new_due
-            activity.save(update_fields=["review_observations", "delivery_due_at", "status", "updated_at"])
+                activity.delivery_alert_24h_sent = False
+                activity.delivery_overdue_alert_sent = False
+            activity.save(update_fields=[
+                "review_observations",
+                "delivery_due_at",
+                "delivery_alert_24h_sent",
+                "delivery_overdue_alert_sent",
+                "status",
+                "updated_at",
+            ])
             _add_history(activity, request.user, "Actividad devuelta a tratamiento", previous_status=previous_status, comment=activity.review_observations)
             notify_activity_returned(activity)
             messages.warning(request, "Actividad devuelta al responsable de tratamiento.")

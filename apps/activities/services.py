@@ -1,5 +1,8 @@
-from django.urls import reverse
+from datetime import timedelta
+
 from django.db.models import Q
+from django.urls import reverse
+from django.utils import timezone
 
 from apps.core.models import NotificationSettings
 from apps.findings.services import send_notification_email
@@ -19,8 +22,9 @@ def _user_email(user):
     return getattr(user, "email", "") if user else ""
 
 
-def _email_body(activity, title, action):
-    due = activity.next_due_at.strftime("%d-%m-%Y %H:%M") if activity.next_due_at else "Sin plazo definido"
+def activity_email_body(activity, title, action, due_at=None):
+    due_at = due_at or activity.next_due_at
+    due = timezone.localtime(due_at).strftime("%d-%m-%Y %H:%M") if due_at else "Sin plazo definido"
     return (
         f"{title}\n\n"
         f"Codigo: {activity.code}\n"
@@ -45,7 +49,7 @@ def notify_activity_assignment(activity):
         return
     send_notification_email(
         subject=f"Actividad SGC asignada: {activity.code}",
-        message=_email_body(activity, "Actividad SGC asignada", "Registrar avances y resultado en la plataforma."),
+        message=activity_email_body(activity, "Actividad SGC asignada", "Registrar avances y resultado en la plataforma."),
         recipients=sorted(recipients),
     )
 
@@ -56,7 +60,7 @@ def notify_activity_review_assignment(activity):
         return
     send_notification_email(
         subject=f"Revision de actividad SGC asignada: {activity.code}",
-        message=_email_body(activity, "Revision final asignada", "Revisar el resultado informado y aprobar el cierre o devolver a tratamiento."),
+        message=activity_email_body(activity, "Revision final asignada", "Revisar el resultado informado y aprobar el cierre o devolver a tratamiento."),
         recipients=[recipient],
     )
 
@@ -70,9 +74,57 @@ def notify_activity_returned(activity):
         return
     send_notification_email(
         subject=f"Actividad SGC devuelta a tratamiento: {activity.code}",
-        message=_email_body(activity, "Actividad devuelta a tratamiento", "Revisar las observaciones y actualizar el resultado."),
+        message=activity_email_body(activity, "Actividad devuelta a tratamiento", "Revisar las observaciones y actualizar el resultado."),
         recipients=sorted(recipients),
     )
+
+
+def activities_due_for_review_alert(now=None):
+    now = now or timezone.now()
+    return Activity.objects.filter(
+        status=Activity.Status.REVIEW_ASSIGNED,
+        review_assigned_to__isnull=False,
+        review_due_at__gt=now,
+        review_due_at__lte=now + timedelta(hours=24),
+        review_alert_24h_sent=False,
+    ).select_related("review_assigned_to")
+
+
+def activities_overdue_for_review_alert(now=None):
+    now = now or timezone.now()
+    return Activity.objects.filter(
+        status=Activity.Status.REVIEW_ASSIGNED,
+        review_assigned_to__isnull=False,
+        review_due_at__lt=now,
+        review_overdue_alert_sent=False,
+    ).select_related("review_assigned_to")
+
+
+def activities_due_for_delivery_alert(now=None):
+    now = now or timezone.now()
+    return Activity.objects.filter(
+        status__in=[Activity.Status.ASSIGNED, Activity.Status.IN_PROGRESS, Activity.Status.RETURNED],
+        delivery_due_at__gt=now,
+        delivery_due_at__lte=now + timedelta(hours=24),
+        delivery_alert_24h_sent=False,
+    ).prefetch_related("responsible_users").select_related("assigned_to")
+
+
+def activities_overdue_for_delivery_alert(now=None):
+    now = now or timezone.now()
+    return Activity.objects.filter(
+        status__in=[Activity.Status.ASSIGNED, Activity.Status.IN_PROGRESS, Activity.Status.RETURNED],
+        delivery_due_at__lt=now,
+        delivery_overdue_alert_sent=False,
+    ).prefetch_related("responsible_users").select_related("assigned_to")
+
+
+def activity_responsible_emails(activity):
+    recipients = {_user_email(user) for user in activity.responsible_users.all()}
+    if not recipients and activity.assigned_to:
+        recipients.add(_user_email(activity.assigned_to))
+    recipients.discard("")
+    return sorted(recipients)
 
 
 def activity_notifications_for_user(user, limit=4):

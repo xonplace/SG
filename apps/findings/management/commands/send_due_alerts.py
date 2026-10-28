@@ -2,6 +2,14 @@ from django.core.management.base import BaseCommand
 
 from apps.core.emailing import send_notification_email
 from apps.core.models import NotificationSettings
+from apps.activities.services import (
+    activity_email_body,
+    activity_responsible_emails,
+    activities_due_for_delivery_alert,
+    activities_due_for_review_alert,
+    activities_overdue_for_delivery_alert,
+    activities_overdue_for_review_alert,
+)
 from apps.findings.models import Finding
 from apps.findings.services import (
     due_recipient_user,
@@ -27,7 +35,7 @@ FIELD_LABELS = {
 
 
 class Command(BaseCommand):
-    help = "Envia alertas 24 horas antes de vencimientos de hallazgos."
+    help = "Envia alertas de vencimiento de hallazgos y revisiones de actividades SGC."
 
     def handle(self, *args, **options):
         notification_settings = NotificationSettings.current()
@@ -38,8 +46,12 @@ class Command(BaseCommand):
         sent = 0
         if notification_settings.notify_due_24h:
             sent += self._send_24h_alerts(notification_settings)
+            sent += self._send_activity_delivery_24h_alerts(notification_settings)
+            sent += self._send_activity_review_24h_alerts(notification_settings)
         if notification_settings.notify_overdue:
             sent += self._send_overdue_alerts(notification_settings)
+            sent += self._send_activity_delivery_overdue_alerts(notification_settings)
+            sent += self._send_activity_review_overdue_alerts(notification_settings)
         self.stdout.write(self.style.SUCCESS(f"Alertas procesadas: {sent}"))
 
     def _label_for(self, finding, due_field):
@@ -120,5 +132,89 @@ class Command(BaseCommand):
                 )
             setattr(finding, sent_field, True)
             finding.save(update_fields=[sent_field, "updated_at"])
+            sent += 1
+        return sent
+
+    def _send_activity_review_24h_alerts(self, notification_settings):
+        sent = 0
+        for activity in activities_due_for_review_alert():
+            recipient = activity.review_assigned_to.email
+            if recipient:
+                send_notification_email(
+                    subject=f"Revision proxima a vencer: {activity.code}",
+                    message=activity_email_body(
+                        activity,
+                        "Revision proxima a vencer",
+                        f"Revisar y cerrar la actividad antes del {format_due(activity.review_due_at)}.",
+                        due_at=activity.review_due_at,
+                    ),
+                    recipients=[recipient],
+                    notification_settings=notification_settings,
+                )
+            activity.review_alert_24h_sent = True
+            activity.save(update_fields=["review_alert_24h_sent", "updated_at"])
+            sent += 1
+        return sent
+
+    def _send_activity_delivery_24h_alerts(self, notification_settings):
+        sent = 0
+        for activity in activities_due_for_delivery_alert():
+            recipients = activity_responsible_emails(activity)
+            if recipients:
+                send_notification_email(
+                    subject=f"Actividad proxima a vencer: {activity.code}",
+                    message=activity_email_body(
+                        activity,
+                        "Actividad proxima a vencer",
+                        f"Registrar avances o informar el resultado antes del {format_due(activity.delivery_due_at)}.",
+                        due_at=activity.delivery_due_at,
+                    ),
+                    recipients=recipients,
+                    notification_settings=notification_settings,
+                )
+            activity.delivery_alert_24h_sent = True
+            activity.save(update_fields=["delivery_alert_24h_sent", "updated_at"])
+            sent += 1
+        return sent
+
+    def _send_activity_review_overdue_alerts(self, notification_settings):
+        sent = 0
+        for activity in activities_overdue_for_review_alert():
+            recipient = activity.review_assigned_to.email
+            if recipient:
+                send_notification_email(
+                    subject=f"Revision vencida: {activity.code}",
+                    message=activity_email_body(
+                        activity,
+                        "Revision vencida",
+                        f"La revision vencio el {format_due(activity.review_due_at)}. Revisar y cerrar la actividad.",
+                        due_at=activity.review_due_at,
+                    ),
+                    recipients=[recipient],
+                    notification_settings=notification_settings,
+                )
+            activity.review_overdue_alert_sent = True
+            activity.save(update_fields=["review_overdue_alert_sent", "updated_at"])
+            sent += 1
+        return sent
+
+    def _send_activity_delivery_overdue_alerts(self, notification_settings):
+        sent = 0
+        for activity in activities_overdue_for_delivery_alert():
+            recipients = activity_responsible_emails(activity)
+            if recipients:
+                send_notification_email(
+                    subject=f"Actividad vencida: {activity.code}",
+                    message=activity_email_body(
+                        activity,
+                        "Actividad vencida",
+                        f"El plazo de entrega vencio el {format_due(activity.delivery_due_at)}. Registrar el avance pendiente.",
+                        due_at=activity.delivery_due_at,
+                    ),
+                    recipients=recipients,
+                    notification_settings=notification_settings,
+                )
+            activity.delivery_overdue_alert_sent = True
+            activity.save(update_fields=["delivery_overdue_alert_sent", "updated_at"])
             sent += 1
         return sent

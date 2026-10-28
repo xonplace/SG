@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 
 from .models import Activity, ActivityAttachment, ActivityProgress
 
@@ -104,6 +105,29 @@ class ActivityReviewAssignForm(StyledFormMixin, forms.ModelForm):
         self.fields["review_assigned_to"].queryset = active_user_queryset()
         self.fields["review_assigned_to"].empty_label = "Seleccionar responsable de revision"
         self.apply_styles()
+
+
+class ActivityDeadlineRescheduleForm(StyledFormMixin, forms.Form):
+    new_due_at = forms.DateTimeField(
+        label="Nueva fecha de compromiso",
+        widget=forms.DateTimeInput(attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"),
+        input_formats=["%Y-%m-%dT%H:%M"],
+    )
+    reason = forms.CharField(
+        label="Motivo y constancia del atraso",
+        widget=forms.Textarea(attrs={"rows": 4}),
+        help_text="Indica el incumplimiento observado y el motivo por el que se acuerda un nuevo plazo.",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_styles()
+
+    def clean_new_due_at(self):
+        due_at = self.cleaned_data["new_due_at"]
+        if due_at <= timezone.now():
+            raise forms.ValidationError("La nueva fecha de compromiso debe ser futura.")
+        return due_at
 
 
 class ActivityReviewForm(StyledFormMixin, forms.Form):
