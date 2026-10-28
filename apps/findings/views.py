@@ -141,14 +141,17 @@ def finding_timeline(finding):
     if is_improvement_opportunity(finding):
         steps = [
             {
+                "key": "registration",
                 "label": "Registro",
                 "statuses": {Finding.Status.INGRESADO, Finding.Status.EN_VALIDACION},
             },
             {
+                "key": "validation",
                 "label": "Validacion",
                 "statuses": {Finding.Status.CLASIFICADO, Finding.Status.CERRADO_NO_APLICA},
             },
             {
+                "key": "action",
                 "label": "Oportunidad de mejora",
                 "statuses": {
                     Finding.Status.ACCION_CORRECTIVA_ASIGNADA,
@@ -158,6 +161,7 @@ def finding_timeline(finding):
                 },
             },
             {
+                "key": "verification",
                 "label": "Seguimiento",
                 "statuses": {
                     Finding.Status.SEGUIMIENTO_ASIGNADO,
@@ -166,6 +170,7 @@ def finding_timeline(finding):
                 },
             },
             {
+                "key": "closure",
                 "label": "Cierre",
                 "statuses": {Finding.Status.CERRADO},
             },
@@ -173,14 +178,17 @@ def finding_timeline(finding):
     else:
         steps = [
             {
+                "key": "registration",
                 "label": "Registro",
                 "statuses": {Finding.Status.INGRESADO, Finding.Status.EN_VALIDACION},
             },
             {
+                "key": "validation",
                 "label": "Validacion",
                 "statuses": {Finding.Status.CLASIFICADO, Finding.Status.CERRADO_NO_APLICA},
             },
             {
+                "key": "correction",
                 "label": "Correccion",
                 "statuses": {
                     Finding.Status.CORRECCION_ASIGNADA,
@@ -190,6 +198,7 @@ def finding_timeline(finding):
                 },
             },
             {
+                "key": "action",
                 "label": "Accion correctiva",
                 "statuses": {
                     Finding.Status.ACCION_CORRECTIVA_ASIGNADA,
@@ -199,6 +208,7 @@ def finding_timeline(finding):
                 },
             },
             {
+                "key": "verification",
                 "label": "Verificacion",
                 "statuses": {
                     Finding.Status.SEGUIMIENTO_ASIGNADO,
@@ -207,6 +217,7 @@ def finding_timeline(finding):
                 },
             },
             {
+                "key": "closure",
                 "label": "Cierre",
                 "statuses": {Finding.Status.CERRADO},
             },
@@ -230,7 +241,7 @@ def finding_timeline(finding):
             state = "current"
         else:
             state = "pending"
-        timeline.append({"label": step["label"], "state": state})
+        timeline.append({"key": step["key"], "label": step["label"], "state": state})
     return timeline
 
 
@@ -525,21 +536,22 @@ def status_button_style(finding):
         "display:inline-flex;align-items:center;justify-content:center;"
         "width:172px;height:38px;border-radius:8px;padding:0.35rem 0.75rem;"
         "font-size:12px;font-weight:600;line-height:1.1;text-align:center;"
-        "color:#ffffff;box-shadow:0 1px 2px rgba(15,23,42,.12);"
+        "color:#ffffff;border:1px solid rgba(255,255,255,.18);"
+        "box-shadow:0 5px 14px rgba(27,49,95,.14);"
     )
     if finding.status in {Finding.Status.CERRADO, Finding.Status.CERRADO_NO_APLICA}:
-        return base + "background:linear-gradient(135deg,#34d399 0%,#059669 100%);"
+        return base + "background:linear-gradient(135deg,#16896f 0%,#0f6f61 100%);"
     if stage_was_returned(finding):
-        return base + "background:linear-gradient(135deg,#fb923c 0%,#dc2626 100%);"
+        return base + "background:linear-gradient(135deg,#d85868 0%,#b83a50 100%);"
     if finding.status in {Finding.Status.INGRESADO, Finding.Status.EN_VALIDACION}:
-        return base + "background:linear-gradient(135deg,#f87171 0%,#dc2626 100%);"
+        return base + "background:linear-gradient(135deg,#355fba 0%,#274b92 100%);"
     if finding.status in {Finding.Status.CLASIFICADO, Finding.Status.CORRECCION_ASIGNADA, Finding.Status.EN_CORRECCION}:
-        return base + "background:linear-gradient(135deg,#fb923c 0%,#f97316 100%);"
+        return base + "background:linear-gradient(135deg,#2389ad 0%,#176d91 100%);"
     if finding.status in {
         Finding.Status.CORRECCION_EN_REVISION,
         Finding.Status.ACCION_CORRECTIVA_EN_REVISION,
     }:
-        return base + "background:linear-gradient(135deg,#fde047 0%,#f59e0b 100%);color:#111827;"
+        return base + "background:linear-gradient(135deg,#7564cf 0%,#5747ad 100%);"
     if finding.status in {
         Finding.Status.CORRECCION_APROBADA,
         Finding.Status.ACCION_CORRECTIVA_APROBADA,
@@ -547,13 +559,13 @@ def status_button_style(finding):
         Finding.Status.EN_SEGUIMIENTO,
         Finding.Status.SEGUIMIENTO_EN_REVISION,
     }:
-        return base + "background:linear-gradient(135deg,#86efac 0%,#22c55e 100%);"
+        return base + "background:linear-gradient(135deg,#249d91 0%,#197b78 100%);"
     if finding.status in {
         Finding.Status.ACCION_CORRECTIVA_ASIGNADA,
         Finding.Status.EN_ACCION_CORRECTIVA,
     }:
-        return base + "background:linear-gradient(135deg,#facc15 0%,#eab308 100%);color:#111827;"
-    return base + "background:linear-gradient(135deg,#374151 0%,#111827 100%);"
+        return base + "background:linear-gradient(135deg,#4f6fd0 0%,#3c56aa 100%);"
+    return base + "background:linear-gradient(135deg,#425475 0%,#2d3c5c 100%);"
 
 
 def classification_short_label(finding):
@@ -1083,13 +1095,16 @@ def finding_detail(request, pk):
     finding = get_object_or_404(Finding, pk=pk)
     finding.display_status_label = display_status_label(finding)
     detected_phase = detected_evidence_phase(finding)
+    timeline = finding_timeline(finding)
+    current_stage = next((step["key"] for step in timeline if step["state"] == "current"), "registration")
     return render(
         request,
         "findings/finding_detail.html",
         {
             "finding": finding,
             "actions": finding_actions(finding, request.user),
-            "timeline": finding_timeline(finding),
+            "timeline": timeline,
+            "current_stage": current_stage,
             "evidence_groups": evidence_stage_groups(finding),
             "can_upload_evidence": can_upload_evidence(finding, request.user, detected_phase),
             "can_delete_finding": request.user.is_superuser,

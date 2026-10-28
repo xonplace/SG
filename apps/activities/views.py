@@ -169,8 +169,10 @@ def activity_detail(request, pk):
         messages.error(request, "No tienes permiso para abrir esta actividad.")
         return redirect("activities:list")
     actions = []
-    if activity.user_is_responsible(request.user) and activity.status in [Activity.Status.ASSIGNED, Activity.Status.IN_PROGRESS, Activity.Status.RETURNED]:
+    can_record_progress = activity.user_is_responsible(request.user) or can_manage_activities(request.user)
+    if can_record_progress and activity.status in [Activity.Status.ASSIGNED, Activity.Status.IN_PROGRESS, Activity.Status.RETURNED]:
         actions.append({"label": "Registrar avance", "url": reverse("activities:progress", args=[activity.pk])})
+    if activity.user_is_responsible(request.user) and activity.status in [Activity.Status.ASSIGNED, Activity.Status.IN_PROGRESS, Activity.Status.RETURNED]:
         actions.append({"label": "Informar resultado", "url": reverse("activities:result", args=[activity.pk])})
     if can_manage_activities(request.user) and activity.status == Activity.Status.RESULT_SUBMITTED and not activity.review_assigned_to:
         actions.append({"label": "Asignar revision final", "url": reverse("activities:assign_review", args=[activity.pk])})

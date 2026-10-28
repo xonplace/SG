@@ -3,9 +3,9 @@
 {% block title %}Registrar hallazgo | Sistema de gestion{% endblock %}
 
 {% block content %}
-<section class="sg-form-page">
+<section class="sg-form-page sg-finding-form-page">
   <div class="w-full">
-    <div class="sg-form-intro">
+    <div class="sg-form-intro sg-form-intro-executive">
       <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <p class="sg-section-kicker">Nuevo hallazgo</p>
@@ -183,11 +183,11 @@
       </div>
     </dialog>
 
-    <form method="post" enctype="multipart/form-data" class="sg-form-panel sg-form-panel-elevated">
+    <form method="post" enctype="multipart/form-data" class="sg-form-panel sg-form-panel-elevated sg-finding-form-panel">
       {% csrf_token %}
 
-      <fieldset class="mb-8">
-        <legend class="mb-4 w-full border-b border-neutral-200 pb-3 sg-section-title">Datos del hallazgo</legend>
+      <fieldset class="sg-form-section sg-form-section-blue">
+        <legend class="sg-form-section-title"><span>01</span> Datos del hallazgo</legend>
         <div class="sg-form-grid">
           {% include "findings/partials/form_field.html" with field=form.description wide=True %}
           {% include "findings/partials/form_field.html" with field=form.detection_date %}
@@ -201,8 +201,8 @@
         </div>
       </fieldset>
 
-      <fieldset class="mb-8">
-        <legend class="mb-4 w-full border-b border-neutral-200 pb-3 sg-section-title">Datos del informante</legend>
+      <fieldset class="sg-form-section sg-form-section-cyan">
+        <legend class="sg-form-section-title"><span>02</span> Datos del informante</legend>
         <div class="sg-form-grid">
           {% include "findings/partials/form_field.html" with field=form.reported_by_name %}
           {% include "findings/partials/form_field.html" with field=form.reported_by_email %}

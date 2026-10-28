@@ -5,19 +5,34 @@
 
 {% block content %}
 <section class="sg-page sg-home-page">
-  <div class="sg-page-header">
-    <div>
-      <p class="sg-section-kicker">{{ company.system_name }}</p>
-      <h1>{{ company.sgc_home_title }}</h1>
+  <section class="sg-home-erp-hero">
+    <div class="sg-home-erp-hero-copy">
+      <p class="sg-home-erp-eyebrow">{{ company.system_name }}</p>
+      <h1>Bienvenido al Sistema de Gestion.</h1>
+      <h2>Calidad visible, decisiones con trazabilidad.</h2>
       <p>{{ company.sgc_home_subtitle }}</p>
+      <div class="sg-home-erp-actions">
+        {% if company.show_findings_module and can_create_findings %}
+          <a href="{% url 'findings:create' %}" class="sg-home-erp-primary">Registrar hallazgo</a>
+        {% endif %}
+        {% if company.show_findings_module and can_view_findings %}
+          <a href="{% url 'findings:list' %}" class="sg-home-erp-secondary">Ver bandeja</a>
+        {% endif %}
+      </div>
     </div>
-    {% if company.show_findings_module and can_create_findings %}
-      <a href="{% url 'findings:create' %}" class="sg-button-brand">Registrar hallazgo</a>
-    {% endif %}
-  </div>
+    <div class="sg-home-erp-summary">
+      <p>Vista ejecutiva</p>
+      <strong>{{ metrics.open_findings }}</strong>
+      <span>hallazgos abiertos</span>
+      <div>
+        <small>{{ metrics.due_findings }} con plazo proximo</small>
+        <small>{{ metrics.closed_findings }} cerrados</small>
+      </div>
+    </div>
+  </section>
 
-  <div class="sg-home-layout">
-    <main class="space-y-4">
+  <div class="sg-home-layout sg-home-layout-refined">
+    <main class="space-y-4 sg-home-main-column">
       <div class="sg-home-stat-grid">
         {% if company.show_documents_module and can_view_sgc_documents %}
           <a href="{% url 'sgc:documents' %}" class="sg-home-stat-card sg-home-stat-blue">
@@ -197,7 +212,7 @@
       {% endif %}
     </main>
 
-    <aside class="space-y-4">
+    <aside class="space-y-4 sg-home-side-column">
       {% if company.show_certificate_module %}
         <section class="sg-card sg-home-side-card">
           <div class="mb-4 flex items-start justify-between gap-3">

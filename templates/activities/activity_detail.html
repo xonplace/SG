@@ -3,8 +3,8 @@
 {% block title %}{{ activity.code }} | Sistema de gestion{% endblock %}
 
 {% block content %}
-<section class="sg-page">
-  <div class="sg-page-header">
+<section class="sg-page sg-module-page sg-activity-detail-page">
+  <div class="sg-page-header sg-module-hero sg-module-hero-activities">
     <div>
       <p class="sg-section-kicker">{{ activity.code }}</p>
       <h1>Detalle de la actividad</h1>
@@ -20,7 +20,7 @@
     </div>
   </div>
 
-  <div class="mb-6 sg-card">
+  <div class="mb-6 sg-card sg-activity-progress-card">
     <div class="mb-3 flex items-center justify-between">
       <h2 class="sg-section-title">Avance general</h2>
       <span class="text-sm font-bold text-blue-700">{{ activity.progress_percentage }}%</span>
@@ -31,7 +31,7 @@
   </div>
 
   <div class="grid gap-6 lg:grid-cols-[340px_1fr]">
-    <aside class="sg-card">
+    <aside class="sg-card sg-activity-facts-card">
       <h2 class="sg-section-title mb-4">Antecedentes</h2>
       <dl class="space-y-4 text-sm">
         <div><dt class="text-slate-500">Origen</dt><dd class="font-semibold">{{ activity.origin_label }}</dd></div>
@@ -46,12 +46,12 @@
     </aside>
 
     <div class="space-y-6">
-      <article class="sg-card">
+      <article class="sg-card sg-activity-content-card sg-activity-description-card">
         <h2 class="sg-section-title mb-3">Descripcion</h2>
         <p class="whitespace-pre-line text-sm leading-6 text-slate-700">{{ activity.description }}</p>
       </article>
 
-      <article class="sg-card">
+      <article class="sg-card sg-activity-content-card sg-activity-result-card">
         <h2 class="sg-section-title mb-3">Resultado informado</h2>
         <p class="whitespace-pre-line text-sm leading-6 text-slate-700">{{ activity.result|default:"Pendiente de informar resultado." }}</p>
         {% if activity.submitted_at %}
@@ -65,7 +65,7 @@
         {% endif %}
       </article>
 
-      <article class="sg-card">
+      <article class="sg-card sg-activity-content-card sg-activity-timeline-card">
         <h2 class="sg-section-title mb-4">Avances registrados</h2>
         <div class="space-y-3">
           {% for progress in progress_entries %}
@@ -85,7 +85,7 @@
   </div>
 
   <div class="mt-6 grid gap-6 lg:grid-cols-2">
-    <article class="sg-card">
+    <article class="sg-card sg-activity-content-card sg-activity-evidence-card">
       <h2 class="sg-section-title mb-4">Evidencias</h2>
       <div class="space-y-2">
         {% for attachment in attachments %}
@@ -102,7 +102,7 @@
       </div>
     </article>
 
-    <article class="sg-card">
+    <article class="sg-card sg-activity-content-card sg-activity-history-card">
       <h2 class="sg-section-title mb-4">Historial</h2>
       <div class="space-y-3">
         {% for item in history %}

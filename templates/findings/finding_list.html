@@ -3,8 +3,8 @@
 {% block title %}Hallazgos | Sistema de gestion{% endblock %}
 
 {% block content %}
-<section class="sg-page">
-  <div class="sg-page-header">
+<section class="sg-page sg-module-page sg-findings-list-page">
+  <div class="sg-page-header sg-module-hero sg-module-hero-findings">
     <div>
       <p class="sg-section-kicker">Hallazgos</p>
       <h1>Bandeja de hallazgos</h1>
@@ -13,7 +13,7 @@
     <a href="{% url 'findings:create' %}" class="sg-button-brand">Registrar hallazgo</a>
   </div>
 
-  <form method="get" class="sg-filter-bar">
+  <form method="get" class="sg-filter-bar sg-filter-bar-modern">
     <div class="sg-filter-grid-wide">
       <div class="sg-filter-field">
         <label for="finding-search" class="sg-filter-label">Buscar</label>

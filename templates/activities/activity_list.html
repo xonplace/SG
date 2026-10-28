@@ -3,8 +3,8 @@
 {% block title %}Actividades SGC | Sistema de gestion{% endblock %}
 
 {% block content %}
-<section class="sg-page">
-  <div class="sg-page-header">
+<section class="sg-page sg-module-page sg-activities-page">
+  <div class="sg-page-header sg-module-hero sg-module-hero-activities">
     <div>
       <p class="sg-section-kicker">Actividades SGC</p>
       <h1>{{ page_title }}</h1>
@@ -15,30 +15,34 @@
     {% endif %}
   </div>
 
-  <div class="mb-5 grid gap-4 md:grid-cols-4">
-    <article class="sg-card">
-      <p class="sg-section-kicker">Total</p>
-      <strong class="mt-2 block text-3xl">{{ counts.total }}</strong>
-      <span class="text-sm text-slate-500">Actividades registradas</span>
+  <div class="sg-activity-stat-grid">
+    <article class="sg-activity-stat-card sg-activity-stat-total">
+      <i class="sg-activity-stat-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M8 6h11M8 12h11M8 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg>
+      </i>
+      <div><p class="sg-section-kicker">Total</p><strong>{{ counts.total }}</strong><span>Actividades registradas</span></div>
     </article>
-    <article class="sg-card">
-      <p class="sg-section-kicker">Abiertas</p>
-      <strong class="mt-2 block text-3xl">{{ counts.open }}</strong>
-      <span class="text-sm text-slate-500">Con seguimiento activo</span>
+    <article class="sg-activity-stat-card sg-activity-stat-open">
+      <i class="sg-activity-stat-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/><path d="M17 3h4v4"/><path d="M21 3l-5 5"/></svg>
+      </i>
+      <div><p class="sg-section-kicker">Abiertas</p><strong>{{ counts.open }}</strong><span>Con seguimiento activo</span></div>
     </article>
-    <article class="sg-card">
-      <p class="sg-section-kicker">Cerradas</p>
-      <strong class="mt-2 block text-3xl">{{ counts.closed }}</strong>
-      <span class="text-sm text-slate-500">Validadas y cerradas</span>
+    <article class="sg-activity-stat-card sg-activity-stat-closed">
+      <i class="sg-activity-stat-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>
+      </i>
+      <div><p class="sg-section-kicker">Cerradas</p><strong>{{ counts.closed }}</strong><span>Validadas y cerradas</span></div>
     </article>
-    <article class="sg-card">
-      <p class="sg-section-kicker">Vencidas</p>
-      <strong class="mt-2 block text-3xl">{{ counts.overdue }}</strong>
-      <span class="text-sm text-slate-500">Requieren atencion</span>
+    <article class="sg-activity-stat-card sg-activity-stat-overdue">
+      <i class="sg-activity-stat-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 3 2.8 19h18.4z"/><path d="M12 9v4M12 17h.01"/></svg>
+      </i>
+      <div><p class="sg-section-kicker">Vencidas</p><strong>{{ counts.overdue }}</strong><span>Requieren atencion</span></div>
     </article>
   </div>
 
-  <form method="get" class="sg-filter-bar">
+  <form method="get" class="sg-filter-bar sg-filter-bar-modern">
     <div class="sg-filter-grid-wide">
       <div class="sg-filter-field">
         <label class="sg-filter-label" for="activity-search">Buscar</label>
@@ -69,9 +73,9 @@
     </div>
   </form>
 
-  <div class="sg-card overflow-hidden p-0">
+  <div class="sg-card sg-data-board sg-activity-data-board overflow-hidden p-0">
     <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <table class="sg-modern-table min-w-full divide-y divide-slate-200 text-sm">
         <thead class="bg-slate-50 text-left text-xs font-bold uppercase tracking-widest text-slate-500">
           <tr>
             <th class="px-5 py-4">Codigo</th>

@@ -3,8 +3,8 @@
 {% block title %}{{ finding.code }} | Sistema de gestion{% endblock %}
 
 {% block content %}
-<section class="sg-page">
-  <div class="sg-page-header sg-finding-detail-header">
+<section class="sg-page sg-module-page sg-finding-detail-page">
+  <div class="sg-page-header sg-finding-detail-header sg-module-hero sg-module-hero-findings">
     <div>
       <p class="sg-section-kicker">{{ finding.code }}</p>
       <h1>Detalle del hallazgo</h1>
@@ -27,24 +27,43 @@
     </div>
   </div>
 
-  <div class="mb-6 sg-card sg-detail-flow sg-finding-flow-card">
-    <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-      <h2 class="sg-section-title">Flujo del hallazgo</h2>
-      <p class="text-xs text-neutral-500">Estado actual: {{ finding.display_status_label }}</p>
+  <div class="sg-finding-stage-shell sg-finding-stage-shell-vivid" data-current-stage="{{ current_stage }}">
+    <div class="sg-finding-stage-heading">
+      <div>
+        <p class="sg-section-kicker">Ruta de tratamiento</p>
+        <h2>Etapas del hallazgo</h2>
+      </div>
+      <div class="sg-finding-current-state">
+        <span>Estado actual</span>
+        <strong>{{ finding.display_status_label }}</strong>
+      </div>
     </div>
-    <ol class="flex flex-wrap gap-2">
+    <ol class="sg-finding-stage-nav" aria-label="Etapas del hallazgo">
       {% for step in timeline %}
-        <li class="sg-flow-pill {% if step.state == 'completed' %}sg-flow-pill-done{% elif step.state == 'current' %}sg-flow-pill-current{% else %}sg-flow-pill-pending{% endif %}">
-          <span></span>
-          <span class="font-medium">{{ step.label }}</span>
+        <li>
+          <button type="button"
+                  class="sg-finding-stage-card sg-finding-stage-{{ step.state }}{% if step.key == current_stage %} is-selected{% endif %}"
+                  data-stage-target="{{ step.key }}"
+                  aria-selected="{% if step.key == current_stage %}true{% else %}false{% endif %}">
+            <span class="sg-finding-stage-number">{{ forloop.counter|stringformat:"02d" }}</span>
+            <span class="sg-finding-stage-label">{{ step.label }}</span>
+            <small>{% if step.state == 'completed' %}Completada{% elif step.state == 'current' %}Etapa actual{% else %}Pendiente{% endif %}</small>
+          </button>
         </li>
       {% endfor %}
     </ol>
   </div>
 
-  <div class="grid gap-6 lg:grid-cols-[320px_1fr]">
-    <article class="sg-card sg-finding-side-card">
-      <h2 class="sg-finding-card-title">Antecedentes</h2>
+  <div class="sg-finding-stage-workspace">
+    <article class="sg-card sg-finding-side-card sg-finding-stage-panel sg-stage-panel-registration" data-stage-panel="registration" {% if current_stage != 'registration' %}hidden{% endif %}>
+      <div class="sg-finding-primary-record">
+        <div>
+          <p class="sg-section-kicker">Hallazgo informado</p>
+          <h2>{{ finding.description }}</h2>
+        </div>
+        <span>{{ finding.code }}</span>
+      </div>
+      <h3 class="sg-finding-card-title">Antecedentes</h3>
       <dl class="sg-finding-meta-list">
         <div><dt class="text-neutral-500">Informado por</dt><dd>{{ finding.reported_by_name }}</dd></div>
         <div><dt class="text-neutral-500">Correo</dt><dd>{{ finding.reported_by_email }}</dd></div>
@@ -72,9 +91,28 @@
       </dl>
     </article>
 
-    <div class="space-y-6">
+    <article class="sg-card sg-finding-info-card sg-finding-stage-panel sg-stage-panel-validation" data-stage-panel="validation" {% if current_stage != 'validation' %}hidden{% endif %}>
+      <div class="sg-finding-panel-head">
+        <div>
+          <p class="sg-section-kicker">Etapa 02</p>
+          <h2>Validacion y clasificacion</h2>
+          <p>Revision del Representante de la Gerencia y definicion del tratamiento aplicable.</p>
+        </div>
+        <span class="sg-deadline-chip">{{ finding.validation_due_at|date:"d-m-Y H:i"|default:"Sin plazo" }}</span>
+      </div>
+      <dl class="sg-finding-stage-data">
+        <div><dt>Aplica tratamiento</dt><dd>{{ finding.applies_treatment|yesno:"Si,No,Pendiente" }}</dd></div>
+        <div><dt>Clasificacion</dt><dd>{{ finding.get_classification_display|default:"Pendiente" }}</dd></div>
+        <div><dt>Representante</dt><dd>{{ finding.representative|default:finding.approved_by|default:"-" }}</dd></div>
+        <div><dt>Clausula / documento</dt><dd>{{ finding.normative_clause|default:"-" }}</dd></div>
+        {% if finding.no_apply_reason %}<div class="md:col-span-2"><dt>Motivo de no aplicacion</dt><dd>{{ finding.no_apply_reason }}</dd></div>{% endif %}
+        <div class="md:col-span-2"><dt>Hallazgo similar previo</dt><dd>{% if finding.similar_previous_finding_record %}<a href="{% url 'findings:detail' finding.similar_previous_finding_record.pk %}">{{ finding.similar_previous_finding_record.code }}</a>{% else %}-{% endif %}</dd></div>
+      </dl>
+    </article>
+
+    <div class="contents">
       {% if not finding.is_improvement_classification %}
-      <article class="sg-card sg-finding-info-card">
+      <article class="sg-card sg-finding-info-card sg-finding-stage-panel sg-stage-panel-correction" data-stage-panel="correction" {% if current_stage != 'correction' %}hidden{% endif %}>
         <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
           <h2 class="sg-section-title">Correccion</h2>
           {% if finding.correction %}
@@ -100,7 +138,7 @@
       </article>
       {% endif %}
 
-      <article class="sg-card sg-finding-info-card">
+      <article class="sg-card sg-finding-info-card sg-finding-stage-panel sg-stage-panel-action" data-stage-panel="action" {% if current_stage != 'action' %}hidden{% endif %}>
         <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
           <h2 class="sg-section-title">
             {% if finding.is_improvement_classification %}Plan de accion{% else %}Accion correctiva{% endif %}
@@ -134,7 +172,7 @@
         {% endif %}
       </article>
 
-      <article class="sg-card sg-finding-info-card">
+      <article class="sg-card sg-finding-info-card sg-finding-stage-panel sg-stage-panel-verification" data-stage-panel="verification" {% if current_stage != 'verification' %}hidden{% endif %}>
         <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
           <h2 class="sg-section-title">Seguimiento y verificacion de eficacia</h2>
           {% if finding.effectiveness_verification %}
@@ -160,6 +198,23 @@
         {% endif %}
       </article>
     </div>
+
+    <article class="sg-card sg-finding-info-card sg-finding-stage-panel sg-stage-panel-closure" data-stage-panel="closure" {% if current_stage != 'closure' %}hidden{% endif %}>
+      <div class="sg-finding-panel-head">
+        <div>
+          <p class="sg-section-kicker">Etapa final</p>
+          <h2>Cierre del hallazgo</h2>
+          <p>Resumen de la decision final y trazabilidad del cierre.</p>
+        </div>
+        <span class="sg-detail-status">{{ finding.display_status_label }}</span>
+      </div>
+      <dl class="sg-finding-stage-data">
+        <div><dt>Estado final</dt><dd>{{ finding.display_status_label }}</dd></div>
+        <div><dt>Fecha de cierre</dt><dd>{{ finding.closed_at|date:"d-m-Y H:i"|default:"Pendiente" }}</dd></div>
+        <div><dt>Clasificacion</dt><dd>{{ finding.get_classification_display|default:"-" }}</dd></div>
+        <div><dt>Verificacion eficaz</dt><dd>{{ finding.effectiveness_verification.is_effective|yesno:"Si,No,Pendiente" }}</dd></div>
+      </dl>
+    </article>
   </div>
 
   <div class="mt-6 sg-card sg-evidence-panel">
@@ -221,4 +276,25 @@
     </div>
   </div>
 </section>
+
+<script>
+  (() => {
+    const shell = document.querySelector(".sg-finding-stage-shell");
+    if (!shell) return;
+    const buttons = [...shell.querySelectorAll("[data-stage-target]")];
+    const panels = [...document.querySelectorAll("[data-stage-panel]")];
+    const showStage = (stage) => {
+      buttons.forEach((button) => {
+        const selected = button.dataset.stageTarget === stage;
+        button.classList.toggle("is-selected", selected);
+        button.setAttribute("aria-selected", selected ? "true" : "false");
+      });
+      panels.forEach((panel) => {
+        panel.hidden = panel.dataset.stagePanel !== stage;
+      });
+    };
+    buttons.forEach((button) => button.addEventListener("click", () => showStage(button.dataset.stageTarget)));
+    showStage(shell.dataset.currentStage || "registration");
+  })();
+</script>
 {% endblock %}
