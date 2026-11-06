@@ -218,26 +218,9 @@
           <div class="mb-4 flex items-start justify-between gap-3">
             <div>
               <p class="sg-section-kicker">Certificado ISO 9001:2015</p>
-              {% if certificate %}
-                <span class="sg-home-live-badge">Vigente</span>
-              {% endif %}
             </div>
           </div>
           {% if certificate %}
-            <div class="sg-home-cert-summary">
-              <div class="sg-home-iso-mark" aria-label="ISO 9001:2015">
-                <svg viewBox="0 0 72 72" role="img">
-                  <circle cx="36" cy="36" r="30"></circle>
-                  <path d="M22 38l8 8 20-22"></path>
-                  <path d="M24 58l-3 9 15-7 15 7-3-9"></path>
-                </svg>
-                <span>ISO</span>
-              </div>
-              <div>
-                <h2>{{ certificate.standard }}</h2>
-                <p>{{ certificate.certification_body }}</p>
-              </div>
-            </div>
             <div class="sg-home-cert-validity">
               <span>Vigencia</span>
               <strong>{{ certificate.expiry_date|date:"d-m-Y"|default:"Sin fecha" }}</strong>
@@ -245,9 +228,8 @@
                 <small>{{ certificate.days_to_expiry }} dias restantes</small>
               {% endif %}
             </div>
-            <div class="mt-4 grid grid-cols-2 gap-2">
-              <a href="{{ certificate.preview_url }}" target="_blank" rel="noopener" class="sg-row-action h-10">Ver certificado</a>
-              <a href="{{ certificate.download_url }}" class="sg-button-brand-compact h-10">Descargar</a>
+            <div class="mt-4">
+              <a href="{{ certificate.preview_url }}" target="_blank" rel="noopener" class="sg-row-action h-10 w-full">Ver certificado</a>
             </div>
           {% else %}
             <p class="text-sm text-slate-500">Aun no hay certificado cargado.</p>
