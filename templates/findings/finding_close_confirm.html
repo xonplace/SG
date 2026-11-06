@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Cerrar {{ finding.code }} | Sistema de gestion{% endblock %}
+
+{% block content %}
+<section class="sg-form-page">
+  <div class="w-full">
+    <div class="sg-form-intro">
+      <p class="sg-section-kicker">{{ finding.code }} · Etapa final</p>
+      <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">Cerrar hallazgo</h1>
+      <p class="mt-3 text-sm leading-6 text-slate-600">El seguimiento y la verificacion de eficacia fueron informados. Confirma el cierre definitivo del hallazgo.</p>
+    </div>
+
+    <article class="sg-form-panel sg-form-panel-elevated">
+      <div class="rounded-xl border border-[#c8d5e8] bg-[#f8fbff] p-5">
+        <p class="sg-section-kicker">Resultado informado</p>
+        <h2 class="mt-2 text-xl font-extrabold text-slate-950">{{ finding.description }}</h2>
+        <dl class="mt-5 grid gap-4 text-sm md:grid-cols-2">
+          <div><dt class="text-slate-500">Responsable</dt><dd class="mt-1 font-semibold">{{ verification.assigned_to|default:"-" }}</dd></div>
+          <div><dt class="text-slate-500">Fecha de entrega</dt><dd class="mt-1 font-semibold">{{ verification.submitted_at|date:"d-m-Y H:i"|default:"-" }}</dd></div>
+          <div><dt class="text-slate-500">Tecnica de seguimiento</dt><dd class="mt-1 font-semibold">{{ verification.technique|default:"-" }}</dd></div>
+          <div><dt class="text-slate-500">Porcentaje de efectividad</dt><dd class="mt-1 font-semibold">{{ verification.effectiveness_percentage|default:"-" }}{% if verification.effectiveness_percentage is not None %}%{% endif %}</dd></div>
+          <div class="md:col-span-2"><dt class="text-slate-500">Criterio de medicion</dt><dd class="mt-1 whitespace-pre-line font-semibold">{{ verification.effectiveness_criteria|default:"-" }}</dd></div>
+          <div class="md:col-span-2"><dt class="text-slate-500">Resultado de verificacion</dt><dd class="mt-1 whitespace-pre-line font-semibold">{{ verification.result|default:"-" }}</dd></div>
+        </dl>
+      </div>
+
+      <form method="post" class="mt-6 flex flex-col items-center gap-4">
+        {% csrf_token %}
+        <button type="submit" class="sg-button-primary min-w-56">Cerrar hallazgo</button>
+        <a href="{% url 'findings:detail' finding.pk %}" class="text-sm font-semibold text-slate-600 hover:underline">Volver al detalle</a>
+      </form>
+    </article>
+  </div>
+</section>
+{% endblock %}

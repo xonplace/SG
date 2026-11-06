@@ -20,6 +20,14 @@
     </div>
   </div>
 
+  {% if awaiting_result_submission %}
+    <div class="mb-6 rounded-xl border border-blue-200 bg-blue-50 px-5 py-4 text-sm leading-6 text-blue-950">
+      <strong>Pendiente de envio a revision final.</strong>
+      Registrar avances o adjuntar documentos no cambia la etapa. El responsable de la actividad o el Representante de la Gerencia debe seleccionar
+      <strong>Informar resultado y enviar a revision</strong> para habilitar el cierre al revisor asignado.
+    </div>
+  {% endif %}
+
   <div class="mb-6 sg-card sg-activity-progress-card">
     <div class="mb-3 flex items-center justify-between">
       <h2 class="sg-section-title">Avance general</h2>

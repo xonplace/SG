@@ -16,6 +16,7 @@ urlpatterns = [
     path("nuevo/registrado/", views.finding_create_success, name="create_success"),
     path("evidencias/<int:pk>/descargar/", views.download_evidence, name="download_evidence"),
     path("<int:pk>/", views.finding_detail, name="detail"),
+    path("<int:pk>/editar/", views.finding_edit, name="edit"),
     path("<int:pk>/eliminar/", views.finding_delete, name="delete"),
     path("<int:pk>/evidencias/nueva/", views.upload_evidence, name="upload_evidence"),
     path("<int:pk>/validar/", views.validate_finding, name="validate"),

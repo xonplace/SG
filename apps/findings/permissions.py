@@ -75,7 +75,7 @@ PERMISSION_DEFINITIONS = [
     (PERMISSION_VIEW_REPORTS, "Consultar reportes y registros", "Reportes"),
     (PERMISSION_VIEW_ACTIVITIES, "Ver actividades planificadas del SGC", "Actividades SGC"),
     (PERMISSION_CREATE_ACTIVITIES, "Crear actividades planificadas del SGC", "Actividades SGC"),
-    (PERMISSION_MANAGE_ACTIVITIES, "Asignar, revisar y cerrar actividades del SGC", "Actividades SGC"),
+    (PERMISSION_MANAGE_ACTIVITIES, "Editar, asignar, revisar y cerrar actividades del SGC", "Actividades SGC"),
 ]
 
 

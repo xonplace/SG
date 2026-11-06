@@ -135,6 +135,36 @@ class FindingCreateForm(forms.ModelForm):
         return finding
 
 
+class FindingEditForm(FindingCreateForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields.pop("evidence_file", None)
+        for field_name in ("area", "process", "source"):
+            current_value = getattr(self.instance, field_name, "")
+            current_choices = dict(self.fields[field_name].choices)
+            if current_value and current_value not in current_choices:
+                current_label = (
+                    dict(Finding.Source.choices).get(current_value, current_value)
+                    if field_name == "source"
+                    else current_value
+                )
+                self.fields[field_name].choices = [
+                    *self.fields[field_name].choices,
+                    (current_value, current_label),
+                ]
+
+    def save(self, commit=True):
+        finding = super().save(commit=False)
+        finding.process_other = self.cleaned_data.get("process_other", "") if finding.process == "Otro" else ""
+        finding.source_other = self.cleaned_data.get("source_other", "") if finding.source == Finding.Source.OTRO else ""
+        description = " ".join(finding.description.split())
+        finding.title = description[:177] + "..." if len(description) > 180 else description
+        if commit:
+            finding.save()
+            self.save_m2m()
+        return finding
+
+
 class StyledModelForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -488,35 +518,6 @@ class VerificationSubmitForm(StyledModelForm):
         widgets = {
             "effectiveness_criteria": forms.Textarea(attrs={"rows": 4}),
             "result": forms.Textarea(attrs={"rows": 5}),
-        }
-
-
-class VerificationReviewForm(StyledModelForm):
-    close_finding = forms.BooleanField(label="Cerrar hallazgo", required=False)
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        require_fields(self, "is_effective")
-
-    def clean(self):
-        cleaned_data = super().clean()
-        if cleaned_data.get("is_effective") is None:
-            self.add_error("is_effective", "Debe indicar si el seguimiento fue eficaz.")
-        if cleaned_data.get("is_effective") is False and not cleaned_data.get("observations"):
-            self.add_error("observations", "Debe indicar observaciones cuando el seguimiento no fue eficaz.")
-        if cleaned_data.get("close_finding") and cleaned_data.get("is_effective") is not True:
-            self.add_error("close_finding", "Solo se puede cerrar el hallazgo si el seguimiento fue eficaz.")
-        return cleaned_data
-
-    class Meta:
-        model = EffectivenessVerification
-        fields = ["is_effective", "observations", "close_finding"]
-        labels = {
-            "is_effective": "Eficaz",
-            "observations": "Observaciones de eficacia o devolucion",
-        }
-        widgets = {
-            "observations": forms.Textarea(attrs={"rows": 4}),
         }
 
 

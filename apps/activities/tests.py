@@ -154,6 +154,123 @@ class ActivityReviewRescheduleTests(TestCase):
         self.activity.refresh_from_db()
         self.assertEqual(self.activity.review_due_at, self.original_due)
 
+    def test_management_representative_can_edit_activity_and_change_is_audited(self):
+        self.activity.delivery_due_at = timezone.now() + timedelta(days=1)
+        self.activity.delivery_alert_24h_sent = True
+        self.activity.delivery_overdue_alert_sent = True
+        self.activity.responsible_users.add(self.responsible)
+        self.activity.save(update_fields=[
+            "delivery_due_at",
+            "delivery_alert_24h_sent",
+            "delivery_overdue_alert_sent",
+            "updated_at",
+        ])
+        original_status = self.activity.status
+        original_code = self.activity.code
+        new_delivery = timezone.localtime(timezone.now() + timedelta(days=5)).replace(second=0, microsecond=0)
+        self.client.force_login(self.representative)
+
+        response = self.client.post(
+            reverse("activities:edit", args=[self.activity.pk]),
+            data={
+                "title": "Actividad actualizada",
+                "origin": self.activity.origin,
+                "origin_other": "",
+                "description": "Descripcion actualizada por el representante",
+                "priority": Activity.Priority.HIGH,
+                "responsible_users": [self.responsible.pk],
+                "follow_up_due_at": "",
+                "delivery_due_at": new_delivery.strftime("%Y-%m-%dT%H:%M"),
+                "review_assigned_to": self.reviewer.pk,
+                "review_due_at": timezone.localtime(self.activity.review_due_at).strftime("%Y-%m-%dT%H:%M"),
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            reverse("activities:detail", args=[self.activity.pk]),
+            fetch_redirect_response=False,
+        )
+        self.activity.refresh_from_db()
+        self.assertEqual(self.activity.title, "Actividad actualizada")
+        self.assertEqual(self.activity.priority, Activity.Priority.HIGH)
+        self.assertEqual(self.activity.status, original_status)
+        self.assertEqual(self.activity.code, original_code)
+        self.assertFalse(self.activity.delivery_alert_24h_sent)
+        self.assertFalse(self.activity.delivery_overdue_alert_sent)
+        history = self.activity.history.first()
+        self.assertEqual(history.action, "Actividad editada")
+        self.assertEqual(history.user, self.representative)
+        self.assertEqual(history.previous_status, original_status)
+        self.assertEqual(history.new_status, original_status)
+        self.assertIn("Actividad: Actividad de prueba -> Actividad actualizada", history.comment)
+        self.assertIn("Prioridad: Media -> Alta", history.comment)
+        self.assertIn("Fecha de entrega:", history.comment)
+
+    def test_activity_responsible_cannot_edit_planning_data(self):
+        self.activity.responsible_users.add(self.responsible)
+        self.client.force_login(self.responsible)
+
+        response = self.client.get(reverse("activities:edit", args=[self.activity.pk]))
+
+        self.assertRedirects(
+            response,
+            reverse("activities:detail", args=[self.activity.pk]),
+            fetch_redirect_response=False,
+        )
+
+    @patch("apps.activities.views.notify_activity_review_assignment")
+    def test_representative_can_submit_result_and_send_activity_to_assigned_reviewer(self, notify_review):
+        activity = Activity.objects.create(
+            title="Actividad pendiente de resultado",
+            description="Actividad con documento agregado durante el seguimiento.",
+            origin=Activity.Origin.MONTHLY_COMMITTEE,
+            status=Activity.Status.IN_PROGRESS,
+            assigned_to=self.responsible,
+            review_assigned_to=self.reviewer,
+            review_due_at=timezone.now() + timedelta(days=3),
+        )
+        activity.responsible_users.add(self.responsible)
+        self.client.force_login(self.representative)
+
+        detail_response = self.client.get(reverse("activities:detail", args=[activity.pk]))
+        self.assertContains(detail_response, "Informar resultado y enviar a revision")
+        self.assertContains(detail_response, "Pendiente de envio a revision final")
+
+        response = self.client.post(
+            reverse("activities:result", args=[activity.pk]),
+            data={"result": "Resultado final revisado por el Representante de la Gerencia."},
+        )
+
+        self.assertRedirects(
+            response,
+            reverse("activities:detail", args=[activity.pk]),
+            fetch_redirect_response=False,
+        )
+        activity.refresh_from_db()
+        self.assertEqual(activity.status, Activity.Status.REVIEW_ASSIGNED)
+        self.assertIsNotNone(activity.submitted_at)
+        self.assertEqual(activity.history.first().action, "Resultado informado")
+        self.assertEqual(activity.history.first().user, self.representative)
+        notify_review.assert_called_once_with(activity)
+
+    def test_result_cannot_be_changed_after_activity_reaches_final_review(self):
+        self.client.force_login(self.representative)
+
+        response = self.client.post(
+            reverse("activities:result", args=[self.activity.pk]),
+            data={"result": "Intento de modificar un resultado ya enviado."},
+        )
+
+        self.assertRedirects(
+            response,
+            reverse("activities:detail", args=[self.activity.pk]),
+            fetch_redirect_response=False,
+        )
+        self.activity.refresh_from_db()
+        self.assertEqual(self.activity.status, Activity.Status.REVIEW_ASSIGNED)
+        self.assertEqual(self.activity.result, "")
+
 
 class ActivityReviewAlertTests(TestCase):
     def setUp(self):
@@ -233,3 +350,105 @@ class ActivityReviewAlertTests(TestCase):
 
         call_command("send_due_alerts")
         send_email.assert_called_once()
+
+
+@override_settings(
+    STORAGES={
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    }
+)
+class ActivityBoardTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.admin = User.objects.create_superuser(
+            username="activity-board-admin",
+            email="activity-board-admin@example.com",
+            password="pass",
+        )
+        self.responsible = User.objects.create_user(
+            username="activity-board-responsible",
+            first_name="Ana",
+            last_name="Responsable",
+            email="ana@example.com",
+            password="pass",
+        )
+        self.reviewer = User.objects.create_user(
+            username="activity-board-reviewer",
+            first_name="Rene",
+            last_name="Revisor",
+            email="rene@example.com",
+            password="pass",
+        )
+        self.open_activity = self._create_activity(
+            "Actividad abierta",
+            Activity.Status.IN_PROGRESS,
+            delivery_due_at=timezone.now() + timedelta(days=3),
+        )
+        self.open_activity.responsible_users.add(self.responsible)
+        self.closed_activity = self._create_activity(
+            "Actividad cerrada",
+            Activity.Status.CLOSED,
+            closed_by=self.reviewer,
+        )
+        self.overdue_activity = self._create_activity(
+            "Actividad vencida",
+            Activity.Status.IN_PROGRESS,
+            delivery_due_at=timezone.now() - timedelta(days=1),
+        )
+        self.review_activity = self._create_activity(
+            "Actividad en revision",
+            Activity.Status.REVIEW_ASSIGNED,
+            review_assigned_to=self.reviewer,
+            review_due_at=timezone.now() + timedelta(days=2),
+        )
+        self.client.force_login(self.admin)
+
+    def _create_activity(self, title, status, **kwargs):
+        return Activity.objects.create(
+            title=title,
+            description=f"Descripcion de {title}",
+            origin=Activity.Origin.MONTHLY_COMMITTEE,
+            status=status,
+            **kwargs,
+        )
+
+    def _listed_codes(self, response):
+        return {activity.code for activity in response.context["activities"]}
+
+    def test_summary_cards_filter_the_activity_table(self):
+        closed_response = self.client.get(
+            reverse("activities:list"), {"summary": "closed"}
+        )
+        self.assertEqual(
+            self._listed_codes(closed_response), {self.closed_activity.code}
+        )
+        self.assertEqual(closed_response.context["selected_summary"], "closed")
+
+        overdue_response = self.client.get(
+            reverse("activities:list"), {"summary": "overdue"}
+        )
+        self.assertEqual(
+            self._listed_codes(overdue_response), {self.overdue_activity.code}
+        )
+
+        open_response = self.client.get(
+            reverse("activities:list"), {"summary": "open"}
+        )
+        self.assertEqual(
+            self._listed_codes(open_response),
+            {
+                self.open_activity.code,
+                self.overdue_activity.code,
+                self.review_activity.code,
+            },
+        )
+
+    def test_board_displays_the_current_assignee_for_each_stage(self):
+        response = self.client.get(reverse("activities:list"))
+
+        self.assertContains(response, "Ana Responsable")
+        self.assertContains(response, "Rene Revisor")
+        self.assertContains(response, "Revision y cierre")
+        self.assertContains(response, "Asignado a")
+        self.assertContains(response, "Bandeja Actividades")

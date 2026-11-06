@@ -3836,7 +3836,16 @@
   }
 
   .sg-activity-stat-card {
-    @apply relative flex min-h-28 items-center gap-4 overflow-hidden rounded-2xl border border-[#d2ddec] bg-white p-5 shadow-[0_10px_26px_rgba(31,59,107,0.08)] transition hover:-translate-y-1 hover:border-[#aebfdd] hover:shadow-[0_18px_38px_rgba(31,59,107,0.14)];
+    @apply relative flex min-h-28 items-center gap-4 overflow-hidden rounded-2xl border border-[#d2ddec] bg-white p-5 shadow-[0_10px_26px_rgba(31,59,107,0.08)] transition hover:-translate-y-1 hover:border-[#aebfdd] hover:shadow-[0_18px_38px_rgba(31,59,107,0.14)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5276dd] focus-visible:ring-offset-2;
+  }
+
+  .sg-activity-stat-card-active {
+    @apply -translate-y-1 border-[#7893df] shadow-[0_18px_38px_rgba(31,59,107,0.16)];
+  }
+
+  .sg-activity-stat-card-active::after {
+    content: "Filtro activo";
+    @apply absolute right-3 top-3 rounded-full bg-[#e9efff] px-2 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-[#3159b8];
   }
 
   .sg-activity-stat-card::before {

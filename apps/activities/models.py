@@ -182,6 +182,28 @@ class Activity(TimeStampedModel):
             names.append(full_name or self.assigned_to.username)
         return ", ".join(names)
 
+    @staticmethod
+    def _user_display_name(user):
+        if not user:
+            return "-"
+        return user.get_full_name().strip() or user.email or user.username
+
+    @property
+    def current_assignee_names(self):
+        if self.status == self.Status.REVIEW_ASSIGNED and self.review_assigned_to:
+            return self._user_display_name(self.review_assigned_to)
+        if self.status == self.Status.CLOSED:
+            return self._user_display_name(self.closed_by or self.review_assigned_to)
+        return self.responsible_names or "-"
+
+    @property
+    def current_assignment_stage(self):
+        if self.status == self.Status.REVIEW_ASSIGNED:
+            return "Revision y cierre"
+        if self.status == self.Status.CLOSED:
+            return "Cierre"
+        return "Ejecucion"
+
     def get_absolute_url(self):
         return reverse("activities:detail", args=[self.pk])
 

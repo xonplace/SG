@@ -135,7 +135,7 @@
             </summary>
             <div class="sg-sidebar-subnav">
               {% if can_view_activities or can_manage_activities %}
-                <a href="{% url 'activities:list' %}" class="sg-sidebar-sublink {% if request.resolver_match.app_name == 'activities' and request.resolver_match.url_name == 'list' %}sg-sidebar-sublink-active{% endif %}">Bandeja</a>
+                <a href="{% url 'activities:list' %}" class="sg-sidebar-sublink {% if request.resolver_match.app_name == 'activities' and request.resolver_match.url_name == 'list' %}sg-sidebar-sublink-active{% endif %}">Bandeja Actividades</a>
               {% endif %}
               {% if can_create_activities or can_manage_activities %}
                 <a href="{% url 'activities:create' %}" class="sg-sidebar-sublink {% if request.resolver_match.app_name == 'activities' and request.resolver_match.url_name == 'create' %}sg-sidebar-sublink-active{% endif %}">Nueva actividad</a>

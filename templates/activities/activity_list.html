@@ -16,33 +16,34 @@
   </div>
 
   <div class="sg-activity-stat-grid">
-    <article class="sg-activity-stat-card sg-activity-stat-total">
+    <a href="?summary=total" class="sg-activity-stat-card sg-activity-stat-total {% if selected_summary == 'total' %}sg-activity-stat-card-active{% endif %}" aria-current="{% if selected_summary == 'total' %}true{% else %}false{% endif %}">
       <i class="sg-activity-stat-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24"><path d="M8 6h11M8 12h11M8 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg>
       </i>
       <div><p class="sg-section-kicker">Total</p><strong>{{ counts.total }}</strong><span>Actividades registradas</span></div>
-    </article>
-    <article class="sg-activity-stat-card sg-activity-stat-open">
+    </a>
+    <a href="?summary=open" class="sg-activity-stat-card sg-activity-stat-open {% if selected_summary == 'open' %}sg-activity-stat-card-active{% endif %}" aria-current="{% if selected_summary == 'open' %}true{% else %}false{% endif %}">
       <i class="sg-activity-stat-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/><path d="M17 3h4v4"/><path d="M21 3l-5 5"/></svg>
       </i>
       <div><p class="sg-section-kicker">Abiertas</p><strong>{{ counts.open }}</strong><span>Con seguimiento activo</span></div>
-    </article>
-    <article class="sg-activity-stat-card sg-activity-stat-closed">
+    </a>
+    <a href="?summary=closed" class="sg-activity-stat-card sg-activity-stat-closed {% if selected_summary == 'closed' %}sg-activity-stat-card-active{% endif %}" aria-current="{% if selected_summary == 'closed' %}true{% else %}false{% endif %}">
       <i class="sg-activity-stat-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>
       </i>
       <div><p class="sg-section-kicker">Cerradas</p><strong>{{ counts.closed }}</strong><span>Validadas y cerradas</span></div>
-    </article>
-    <article class="sg-activity-stat-card sg-activity-stat-overdue">
+    </a>
+    <a href="?summary=overdue" class="sg-activity-stat-card sg-activity-stat-overdue {% if selected_summary == 'overdue' %}sg-activity-stat-card-active{% endif %}" aria-current="{% if selected_summary == 'overdue' %}true{% else %}false{% endif %}">
       <i class="sg-activity-stat-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24"><path d="M12 3 2.8 19h18.4z"/><path d="M12 9v4M12 17h.01"/></svg>
       </i>
       <div><p class="sg-section-kicker">Vencidas</p><strong>{{ counts.overdue }}</strong><span>Requieren atencion</span></div>
-    </article>
+    </a>
   </div>
 
   <form method="get" class="sg-filter-bar sg-filter-bar-modern">
+    <input type="hidden" name="summary" value="{{ selected_summary }}">
     <div class="sg-filter-grid-wide">
       <div class="sg-filter-field">
         <label class="sg-filter-label" for="activity-search">Buscar</label>
@@ -80,7 +81,7 @@
           <tr>
             <th class="px-5 py-4">Codigo</th>
             <th class="px-5 py-4">Actividad</th>
-            <th class="px-5 py-4">Responsable</th>
+            <th class="px-5 py-4">Asignado a</th>
             <th class="px-5 py-4">Seguimiento</th>
             <th class="px-5 py-4">Entrega</th>
             <th class="px-5 py-4">Estado</th>
@@ -95,7 +96,10 @@
                 <p class="font-semibold text-slate-950">{{ activity.title }}</p>
                 <p class="mt-1 text-xs text-slate-500">{{ activity.origin_label }}</p>
               </td>
-              <td class="px-5 py-4">{{ activity.responsible_names|default:"-" }}</td>
+              <td class="px-5 py-4">
+                <p class="font-semibold text-slate-900">{{ activity.current_assignee_names }}</p>
+                <p class="mt-1 text-xs text-slate-500">{{ activity.current_assignment_stage }}</p>
+              </td>
               <td class="px-5 py-4">{{ activity.follow_up_due_at|date:"d-m-Y H:i"|default:"-" }}</td>
               <td class="px-5 py-4">{{ activity.delivery_due_at|date:"d-m-Y H:i"|default:"-" }}</td>
               <td class="px-5 py-4">

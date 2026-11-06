@@ -3,12 +3,12 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
 from .models import Correction, CorrectiveAction, EffectivenessVerification, Evidence, Finding
-from .permissions import CORRECTION_GROUP, CORRECTIVE_ACTION_GROUP, QUERY_GROUP, REPRESENTATIVE_GROUP
+from .permissions import ADMINISTRATOR_GROUP, CORRECTION_GROUP, CORRECTIVE_ACTION_GROUP, QUERY_GROUP, REPRESENTATIVE_GROUP
 from apps.core.models import NotificationSettings
 
 from .services import notify_assignment, representative_emails
@@ -27,6 +27,7 @@ class FindingTreatmentReviewTests(TestCase):
         self.correction_group = Group.objects.create(name=CORRECTION_GROUP)
         self.corrective_action_group = Group.objects.create(name=CORRECTIVE_ACTION_GROUP)
         self.representative_group = Group.objects.create(name=REPRESENTATIVE_GROUP)
+        self.administrator_group = Group.objects.create(name=ADMINISTRATOR_GROUP)
 
     def finding(self, *, status, classification=Finding.Classification.NO_CONFORMIDAD_MENOR):
         return Finding.objects.create(
@@ -87,7 +88,7 @@ class FindingTreatmentReviewTests(TestCase):
         self.assertEqual(display_status_label(finding), "Accion correctiva observada")
         self.assertEqual(finding.history.first().action, "Accion correctiva observada y devuelta")
 
-    def test_not_effective_verification_returns_to_corrective_action(self):
+    def test_representative_closes_finding_from_final_stage(self):
         finding = self.finding(status=Finding.Status.SEGUIMIENTO_EN_REVISION)
         CorrectiveAction.objects.create(
             finding=finding,
@@ -100,21 +101,48 @@ class FindingTreatmentReviewTests(TestCase):
             assigned_to=self.user,
             assigned_at=timezone.now(),
             submitted_at=timezone.now(),
-            result="No se logro evitar recurrencia.",
+            result="La accion implementada cumple el criterio de eficacia.",
         )
 
         response = self.client.post(
             reverse("findings:review_verification", args=[finding.pk]),
-            data={"is_effective": "False", "observations": "La accion no fue eficaz."},
         )
 
         self.assertRedirects(response, reverse("findings:detail", args=[finding.pk]), fetch_redirect_response=False)
         finding.refresh_from_db()
-        self.assertEqual(finding.status, Finding.Status.EN_ACCION_CORRECTIVA)
-        self.assertIsNotNone(finding.corrective_action_due_at)
+        finding.effectiveness_verification.refresh_from_db()
+        self.assertEqual(finding.status, Finding.Status.CERRADO)
+        self.assertIsNotNone(finding.closed_at)
         self.assertIsNone(finding.verification_due_at)
-        self.assertEqual(display_status_label(finding), "Seguimiento no eficaz - revisar accion correctiva")
-        self.assertEqual(finding.history.first().action, "Seguimiento no eficaz, accion devuelta")
+        self.assertTrue(finding.effectiveness_verification.is_effective)
+        self.assertEqual(finding.effectiveness_verification.reviewed_by, self.user)
+        self.assertEqual(finding.history.first().action, "Hallazgo cerrado por el Representante de la Gerencia")
+
+    @override_settings(
+        STORAGES={
+            "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+            "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+        }
+    )
+    def test_final_review_page_only_offers_close_finding_action(self):
+        finding = self.finding(status=Finding.Status.SEGUIMIENTO_EN_REVISION)
+        EffectivenessVerification.objects.create(
+            finding=finding,
+            assigned_to=self.user,
+            assigned_at=timezone.now(),
+            submitted_at=timezone.now(),
+            result="Resultado final registrado.",
+            effectiveness_percentage=100,
+        )
+
+        response = self.client.get(reverse("findings:review_verification", args=[finding.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Cerrar hallazgo")
+        self.assertNotContains(response, "id_is_effective")
+        self.assertNotContains(response, "Agregar evidencia")
+        self.assertNotContains(response, ">Guardar<", html=True)
+        self.assertFalse(action_available(finding, self.user, "upload_evidence"))
 
     def test_evidence_upload_is_not_available_for_user_who_only_can_view_findings(self):
         viewer = get_user_model().objects.create_user(
@@ -260,6 +288,80 @@ class FindingTreatmentReviewTests(TestCase):
 
         self.assertEqual(response.status_code, 403)
         self.assertTrue(Finding.objects.filter(pk=finding.pk).exists())
+
+    def test_administrator_can_edit_finding_and_change_is_audited(self):
+        administrator = get_user_model().objects.create_user(
+            username="edit-administrator",
+            first_name="Editora",
+            last_name="SGC",
+            email="edit-administrator@example.com",
+            password="pass",
+        )
+        administrator.groups.add(self.administrator_group)
+        finding = self.finding(status=Finding.Status.SEGUIMIENTO_ASIGNADO)
+        original_status = finding.status
+        original_code = finding.code
+        self.client.force_login(administrator)
+
+        response = self.client.post(
+            reverse("findings:edit", args=[finding.pk]),
+            data={
+                "description": "Descripcion corregida por el representante",
+                "detection_date": finding.detection_date.isoformat(),
+                "reported_by_name": finding.reported_by_name,
+                "reported_by_email": finding.reported_by_email,
+                "reported_by_position": "Jefatura de prueba",
+                "area": finding.area,
+                "process": finding.process,
+                "process_other": finding.process_other,
+                "source": finding.source,
+                "source_other": finding.source_other,
+                "objective_evidence": finding.objective_evidence,
+            },
+        )
+
+        self.assertRedirects(response, reverse("findings:detail", args=[finding.pk]), fetch_redirect_response=False)
+        finding.refresh_from_db()
+        self.assertEqual(finding.description, "Descripcion corregida por el representante")
+        self.assertEqual(finding.title, "Descripcion corregida por el representante")
+        self.assertEqual(finding.reported_by_position, "Jefatura de prueba")
+        self.assertEqual(finding.status, original_status)
+        self.assertEqual(finding.code, original_code)
+        history = finding.history.first()
+        self.assertEqual(history.action, "Hallazgo editado")
+        self.assertEqual(history.user, administrator)
+        self.assertEqual(history.previous_status, original_status)
+        self.assertEqual(history.new_status, original_status)
+        self.assertIn("Descripcion del hallazgo: Descripcion del hallazgo de prueba -> Descripcion corregida", history.comment)
+        self.assertIn("Cargo: - -> Jefatura de prueba", history.comment)
+
+    def test_representative_cannot_edit_finding(self):
+        representative = get_user_model().objects.create_user(
+            username="edit-representative",
+            email="edit-representative@example.com",
+            password="pass",
+        )
+        representative.groups.add(self.representative_group)
+        finding = self.finding(status=Finding.Status.INGRESADO)
+        self.client.force_login(representative)
+
+        response = self.client.get(reverse("findings:edit", args=[finding.pk]))
+
+        self.assertRedirects(response, reverse("core:home"), fetch_redirect_response=False)
+
+    def test_user_without_manage_findings_permission_cannot_edit_finding(self):
+        viewer = get_user_model().objects.create_user(
+            username="edit-viewer",
+            email="edit-viewer@example.com",
+            password="pass",
+        )
+        viewer.groups.add(self.query_group)
+        finding = self.finding(status=Finding.Status.INGRESADO)
+        self.client.force_login(viewer)
+
+        response = self.client.get(reverse("findings:edit", args=[finding.pk]))
+
+        self.assertRedirects(response, reverse("core:home"), fetch_redirect_response=False)
 
     def test_representative_group_users_are_notification_recipients(self):
         representative = get_user_model().objects.create_user(

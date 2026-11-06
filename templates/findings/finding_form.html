@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Registrar hallazgo | Sistema de gestion{% endblock %}
+{% block title %}{% if is_edit %}Editar {{ finding.code }}{% else %}Registrar hallazgo{% endif %} | Sistema de gestion{% endblock %}
 
 {% block content %}
 <section class="sg-form-page sg-finding-form-page">
@@ -8,9 +8,11 @@
     <div class="sg-form-intro sg-form-intro-executive">
       <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
-          <p class="sg-section-kicker">Nuevo hallazgo</p>
-          <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">Registrar hallazgo</h1>
-          <p class="mt-3 text-sm leading-6 text-slate-600">Completa la informacion inicial para que el Representante de la Gerencia pueda validar el hallazgo.</p>
+          <p class="sg-section-kicker">{% if is_edit %}{{ finding.code }}{% else %}Nuevo hallazgo{% endif %}</p>
+          <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">{% if is_edit %}Editar hallazgo{% else %}Registrar hallazgo{% endif %}</h1>
+          <p class="mt-3 text-sm leading-6 text-slate-600">
+            {% if is_edit %}Actualiza los antecedentes del registro. Los cambios quedaran identificados en el historial del hallazgo.{% else %}Completa la informacion inicial para que el Representante de la Gerencia pueda validar el hallazgo.{% endif %}
+          </p>
         </div>
         <button type="button" class="sg-help-button" onclick="document.getElementById('finding-help-dialog').showModal()">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.5 1.5c0 2-2 2-2 4"/><path d="M12 18h.01"/></svg>
@@ -197,7 +199,7 @@
           {% include "findings/partials/form_field.html" with field=form.process %}
           {% include "findings/partials/form_field.html" with field=form.process_other %}
           {% include "findings/partials/form_field.html" with field=form.objective_evidence wide=True %}
-          {% include "findings/partials/form_field.html" with field=form.evidence_file wide=True %}
+          {% if not is_edit %}{% include "findings/partials/form_field.html" with field=form.evidence_file wide=True %}{% endif %}
         </div>
       </fieldset>
 
@@ -211,8 +213,12 @@
       </fieldset>
 
       <div class="sg-form-actions">
-        <a href="{% url 'core:home' %}" class="sg-button-secondary">Cancelar</a>
-        <button type="submit" class="sg-button-primary">Guardar hallazgo</button>
+        {% if is_edit %}
+          <a href="{% url 'findings:detail' finding.pk %}" class="sg-button-secondary">Cancelar</a>
+        {% else %}
+          <a href="{% url 'core:home' %}" class="sg-button-secondary">Cancelar</a>
+        {% endif %}
+        <button type="submit" class="sg-button-primary">{% if is_edit %}Guardar cambios{% else %}Guardar hallazgo{% endif %}</button>
       </div>
     </form>
   </div>

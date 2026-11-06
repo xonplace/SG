@@ -267,8 +267,11 @@
       {% for item in finding.history.all %}
         <div class="border-l border-neutral-300 pl-4 text-sm">
           <p class="font-medium">{{ item.action }}</p>
-          <p class="text-neutral-500">{{ item.created_at|date:"d-m-Y H:i" }}</p>
-          {% if item.comment %}<p class="mt-1 text-neutral-600">{{ item.comment }}</p>{% endif %}
+          <p class="text-neutral-500">
+            {{ item.created_at|date:"d-m-Y H:i" }}
+            {% if item.user %}- {{ item.user.get_full_name|default:item.user.username }}{% endif %}
+          </p>
+          {% if item.comment %}<p class="mt-1 whitespace-pre-line text-neutral-600">{{ item.comment }}</p>{% endif %}
         </div>
       {% empty %}
         <p class="text-sm text-neutral-500">Sin historial registrado.</p>

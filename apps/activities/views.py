@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.db.models import Q
 from django.urls import reverse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -29,7 +30,9 @@ def _user_can_open(user, activity):
 
 
 def _activity_scope(user):
-    queryset = Activity.objects.select_related("assigned_to", "assigned_by", "review_assigned_to").prefetch_related("responsible_users")
+    queryset = Activity.objects.select_related(
+        "assigned_to", "assigned_by", "review_assigned_to", "closed_by"
+    ).prefetch_related("responsible_users")
     if can_manage_activities(user) or can_view_activities(user):
         return queryset
     return queryset.filter(Q(assigned_to=user) | Q(responsible_users=user) | Q(review_assigned_to=user)).distinct()
@@ -44,6 +47,33 @@ def _add_history(activity, user, action, previous_status="", comment=""):
         new_status=activity.status,
         comment=comment,
     )
+
+
+def _activity_user_label(user):
+    if not user:
+        return "-"
+    return user.get_full_name().strip() or user.username
+
+
+def _activity_datetime_label(value):
+    if not value:
+        return "-"
+    return timezone.localtime(value).strftime("%d-%m-%Y %H:%M")
+
+
+def _activity_edit_snapshot(activity):
+    responsible_names = sorted(_activity_user_label(user) for user in activity.responsible_users.all())
+    return {
+        "Actividad": activity.title,
+        "Origen": activity.origin_label,
+        "Descripcion": activity.description,
+        "Prioridad": activity.get_priority_display(),
+        "Responsables": ", ".join(responsible_names) or "-",
+        "Fecha de seguimiento": _activity_datetime_label(activity.follow_up_due_at),
+        "Fecha de entrega": _activity_datetime_label(activity.delivery_due_at),
+        "Responsable de revision": _activity_user_label(activity.review_assigned_to),
+        "Plazo de revision": _activity_datetime_label(activity.review_due_at),
+    }
 
 
 def _save_optional_attachment(activity, user, uploaded_file, description="", progress=None):
@@ -65,6 +95,26 @@ def _status_counts(queryset):
     return {"total": total, "open": open_count, "closed": closed_count, "overdue": overdue_count}
 
 
+def _filter_by_summary(queryset, summary):
+    if summary == "open":
+        return queryset.exclude(status=Activity.Status.CLOSED)
+    if summary == "closed":
+        return queryset.filter(status=Activity.Status.CLOSED)
+    if summary == "overdue":
+        now = timezone.now()
+        return queryset.exclude(status=Activity.Status.CLOSED).filter(
+            Q(follow_up_due_at__lt=now)
+            | Q(delivery_due_at__lt=now)
+            | Q(review_due_at__lt=now)
+        )
+    return queryset
+
+
+def _selected_summary(request):
+    summary = request.GET.get("summary", "total")
+    return summary if summary in {"total", "open", "closed", "overdue"} else "total"
+
+
 @login_required
 def activity_list(request):
     if not (can_view_activities(request.user) or can_manage_activities(request.user)):
@@ -75,6 +125,7 @@ def activity_list(request):
     query = request.GET.get("q", "").strip()
     selected_status = request.GET.get("status", "")
     selected_origin = request.GET.get("origin", "")
+    selected_summary = _selected_summary(request)
 
     if query:
         queryset = queryset.filter(Q(code__icontains=query) | Q(title__icontains=query) | Q(description__icontains=query))
@@ -83,12 +134,16 @@ def activity_list(request):
     if selected_origin:
         queryset = queryset.filter(origin=selected_origin)
 
+    counts = _status_counts(queryset)
+    queryset = _filter_by_summary(queryset, selected_summary)
+
     context = {
         "activities": queryset,
-        "counts": _status_counts(queryset),
+        "counts": counts,
         "query": query,
         "selected_status": selected_status,
         "selected_origin": selected_origin,
+        "selected_summary": selected_summary,
         "status_choices": Activity.Status.choices,
         "origin_choices": Activity.Origin.choices,
         "can_create_activity": can_create_activities(request.user) or can_manage_activities(request.user),
@@ -100,15 +155,19 @@ def activity_list(request):
 
 @login_required
 def my_activities(request):
-    queryset = Activity.objects.select_related("assigned_to", "review_assigned_to").prefetch_related("responsible_users").filter(
+    queryset = Activity.objects.select_related("assigned_to", "review_assigned_to", "closed_by").prefetch_related("responsible_users").filter(
         Q(assigned_to=request.user) | Q(responsible_users=request.user) | Q(review_assigned_to=request.user)
     ).distinct()
+    selected_summary = _selected_summary(request)
+    counts = _status_counts(queryset)
+    queryset = _filter_by_summary(queryset, selected_summary)
     context = {
         "activities": queryset,
-        "counts": _status_counts(queryset),
+        "counts": counts,
         "query": "",
         "selected_status": "",
         "selected_origin": "",
+        "selected_summary": selected_summary,
         "status_choices": Activity.Status.choices,
         "origin_choices": Activity.Origin.choices,
         "can_create_activity": can_create_activities(request.user) or can_manage_activities(request.user),
@@ -127,12 +186,16 @@ def due_activities(request):
     queryset = _activity_scope(request.user).exclude(status=Activity.Status.CLOSED).filter(
         Q(follow_up_due_at__lt=now) | Q(delivery_due_at__lt=now) | Q(review_due_at__lt=now)
     )
+    selected_summary = _selected_summary(request)
+    counts = _status_counts(queryset)
+    queryset = _filter_by_summary(queryset, selected_summary)
     context = {
         "activities": queryset,
-        "counts": _status_counts(queryset),
+        "counts": counts,
         "query": "",
         "selected_status": "",
         "selected_origin": "",
+        "selected_summary": selected_summary,
         "status_choices": Activity.Status.choices,
         "origin_choices": Activity.Origin.choices,
         "can_create_activity": can_create_activities(request.user) or can_manage_activities(request.user),
@@ -170,6 +233,71 @@ def activity_create(request):
 
 
 @login_required
+def activity_edit(request, pk):
+    activity = get_object_or_404(_activity_scope(request.user), pk=pk)
+    if not can_manage_activities(request.user):
+        messages.error(request, "Solo el Representante de la Gerencia puede editar actividades.")
+        return redirect("activities:detail", activity.pk)
+
+    previous_status = activity.status
+    previous_delivery_due_at = activity.delivery_due_at
+    previous_review_due_at = activity.review_due_at
+    previous_responsible_ids = set(activity.responsible_users.values_list("pk", flat=True))
+    previous_reviewer_id = activity.review_assigned_to_id
+    before = _activity_edit_snapshot(activity)
+    form = ActivityCreateForm(request.POST or None, instance=activity)
+
+    if request.method == "POST" and form.is_valid():
+        if form.has_changed():
+            new_responsible_ids = {user.pk for user in form.cleaned_data["responsible_users"]}
+            reviewer_changed = activity.review_assigned_to_id != previous_reviewer_id
+            with transaction.atomic():
+                activity = form.save(commit=False)
+                if activity.origin != Activity.Origin.OTHER:
+                    activity.origin_other = ""
+                if reviewer_changed:
+                    activity.review_assigned_by = request.user if activity.review_assigned_to else None
+                if activity.delivery_due_at != previous_delivery_due_at or new_responsible_ids != previous_responsible_ids:
+                    activity.delivery_alert_24h_sent = False
+                    activity.delivery_overdue_alert_sent = False
+                if activity.review_due_at != previous_review_due_at or reviewer_changed:
+                    activity.review_alert_24h_sent = False
+                    activity.review_overdue_alert_sent = False
+                activity.save()
+                form.save_m2m()
+                activity.assigned_to = activity.responsible_users.first()
+                activity.save(update_fields=["assigned_to", "updated_at"])
+
+                after = _activity_edit_snapshot(activity)
+                changes = [
+                    f"{label}: {before[label]} -> {after[label]}"
+                    for label in before
+                    if before[label] != after[label]
+                ]
+                if changes:
+                    _add_history(
+                        activity,
+                        request.user,
+                        "Actividad editada",
+                        previous_status=previous_status,
+                        comment="\n".join(changes),
+                    )
+            if changes:
+                messages.success(request, f"Actividad {activity.code} actualizada. Los cambios quedaron registrados en el historial.")
+            else:
+                messages.info(request, "No se detectaron cambios visibles en la actividad.")
+        else:
+            messages.info(request, "No se detectaron cambios en la actividad.")
+        return redirect("activities:detail", activity.pk)
+
+    return render(
+        request,
+        "activities/activity_form.html",
+        {"form": form, "title": f"Editar actividad {activity.code}", "activity": activity},
+    )
+
+
+@login_required
 def activity_detail(request, pk):
     activity = get_object_or_404(_activity_scope(request.user), pk=pk)
     if not _user_can_open(request.user, activity):
@@ -179,8 +307,13 @@ def activity_detail(request, pk):
     can_record_progress = activity.user_is_responsible(request.user) or can_manage_activities(request.user)
     if can_record_progress and activity.status in [Activity.Status.ASSIGNED, Activity.Status.IN_PROGRESS, Activity.Status.RETURNED]:
         actions.append({"label": "Registrar avance", "url": reverse("activities:progress", args=[activity.pk])})
-    if activity.user_is_responsible(request.user) and activity.status in [Activity.Status.ASSIGNED, Activity.Status.IN_PROGRESS, Activity.Status.RETURNED]:
-        actions.append({"label": "Informar resultado", "url": reverse("activities:result", args=[activity.pk])})
+    if can_record_progress and activity.status in [Activity.Status.ASSIGNED, Activity.Status.IN_PROGRESS, Activity.Status.RETURNED]:
+        actions.append(
+            {
+                "label": "Informar resultado y enviar a revision",
+                "url": reverse("activities:result", args=[activity.pk]),
+            }
+        )
     if can_manage_activities(request.user) and activity.status == Activity.Status.RESULT_SUBMITTED and not activity.review_assigned_to:
         actions.append({"label": "Asignar revision final", "url": reverse("activities:assign_review", args=[activity.pk])})
     if (activity.review_assigned_to_id == request.user.id or can_manage_activities(request.user)) and activity.status == Activity.Status.REVIEW_ASSIGNED:
@@ -193,6 +326,8 @@ def activity_detail(request, pk):
         Activity.Status.REVIEW_ASSIGNED,
     ]:
         actions.append({"label": "Reprogramar plazo", "url": reverse("activities:reschedule_deadline", args=[activity.pk])})
+    if can_manage_activities(request.user):
+        actions.append({"label": "Editar actividad", "url": reverse("activities:edit", args=[activity.pk])})
 
     return render(
         request,
@@ -203,6 +338,8 @@ def activity_detail(request, pk):
             "progress_entries": activity.progress_entries.select_related("created_by"),
             "attachments": activity.attachments.select_related("uploaded_by"),
             "history": activity.history.select_related("user"),
+            "awaiting_result_submission": bool(activity.review_assigned_to_id)
+            and activity.status in [Activity.Status.ASSIGNED, Activity.Status.IN_PROGRESS, Activity.Status.RETURNED],
         },
     )
 
@@ -236,6 +373,9 @@ def activity_result(request, pk):
     if not (activity.user_is_responsible(request.user) or can_manage_activities(request.user)):
         messages.error(request, "No puedes informar el resultado de esta actividad.")
         return redirect("activities:detail", activity.pk)
+    if activity.status not in [Activity.Status.ASSIGNED, Activity.Status.IN_PROGRESS, Activity.Status.RETURNED]:
+        messages.error(request, "El resultado solo puede informarse mientras la actividad esta en tratamiento.")
+        return redirect("activities:detail", activity.pk)
     form = ActivityResultForm(request.POST or None, request.FILES or None, instance=activity)
     if request.method == "POST" and form.is_valid():
         previous_status = activity.status
@@ -256,7 +396,15 @@ def activity_result(request, pk):
         else:
             messages.success(request, "Resultado enviado. Ahora debe asignarse un responsable de revision y cierre.")
         return redirect("activities:detail", activity.pk)
-    return render(request, "activities/activity_form.html", {"form": form, "title": f"Informar resultado {activity.code}", "activity": activity})
+    return render(
+        request,
+        "activities/activity_form.html",
+        {
+            "form": form,
+            "title": f"Informar resultado y enviar a revision {activity.code}",
+            "activity": activity,
+        },
+    )
 
 
 @login_required

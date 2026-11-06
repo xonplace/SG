@@ -20,15 +20,15 @@ from .forms import (
     CorrectiveActionSubmitForm,
     EvidenceUploadForm,
     FindingCreateForm,
+    FindingEditForm,
     FindingValidationForm,
     ImprovementPlanReviewForm,
     ImprovementPlanSubmitForm,
     VerificationAssignForm,
-    VerificationReviewForm,
     VerificationSubmitForm,
 )
 from .models import Correction, CorrectiveAction, DeadlineSetting, EffectivenessVerification, Evidence, Finding
-from .permissions import assigned_or_representative, can_view_findings, is_representative, role_required
+from .permissions import assigned_or_representative, can_view_findings, is_administrator, is_representative, role_required
 from .services import active_due_dates_for, active_due_query, due_at_from_business_days, notify_assignment, notify_new_finding, notify_representative, record_history
 
 
@@ -127,14 +127,23 @@ def finding_actions(finding, user):
         "review_corrective_action": "Revisar plan de accion" if improvement else "Revisar accion correctiva",
         "assign_verification": "Asignar seguimiento",
         "submit_verification": "Registrar seguimiento",
-        "review_verification": "Revisar seguimiento",
+        "review_verification": "Cerrar hallazgo",
         "upload_evidence": "Cargar evidencia",
     }
-    return [
+    actions = [
         {"name": name, "label": label, "url": reverse(f"findings:{name}", args=[finding.pk])}
         for name, label in action_labels.items()
         if action_available(finding, user, name)
     ]
+    if is_administrator(user):
+        actions.append(
+            {
+                "name": "edit",
+                "label": "Editar hallazgo",
+                "url": reverse("findings:edit", args=[finding.pk]),
+            }
+        )
+    return actions
 
 
 def finding_timeline(finding):
@@ -166,13 +175,12 @@ def finding_timeline(finding):
                 "statuses": {
                     Finding.Status.SEGUIMIENTO_ASIGNADO,
                     Finding.Status.EN_SEGUIMIENTO,
-                    Finding.Status.SEGUIMIENTO_EN_REVISION,
                 },
             },
             {
                 "key": "closure",
                 "label": "Cierre",
-                "statuses": {Finding.Status.CERRADO},
+                "statuses": {Finding.Status.SEGUIMIENTO_EN_REVISION, Finding.Status.CERRADO},
             },
         ]
     else:
@@ -213,13 +221,12 @@ def finding_timeline(finding):
                 "statuses": {
                     Finding.Status.SEGUIMIENTO_ASIGNADO,
                     Finding.Status.EN_SEGUIMIENTO,
-                    Finding.Status.SEGUIMIENTO_EN_REVISION,
                 },
             },
             {
                 "key": "closure",
                 "label": "Cierre",
-                "statuses": {Finding.Status.CERRADO},
+                "statuses": {Finding.Status.SEGUIMIENTO_EN_REVISION, Finding.Status.CERRADO},
             },
         ]
     current_index = 0
@@ -287,6 +294,8 @@ def evidence_stage_groups(finding):
 
 def can_upload_evidence(finding, user, phase=None):
     if not user.is_authenticated:
+        return False
+    if finding.status == Finding.Status.SEGUIMIENTO_EN_REVISION:
         return False
     if is_representative(user):
         return True
@@ -430,7 +439,7 @@ def pending_milestone_label(finding):
         Finding.Status.CLASIFICADO: "Asignar OM" if improvement else "Asignar responsable de Correccion y Accion Correctiva",
         Finding.Status.CORRECCION_APROBADA: "Asignar accion correctiva",
         Finding.Status.ACCION_CORRECTIVA_APROBADA: "Asignar seguimiento",
-        Finding.Status.SEGUIMIENTO_EN_REVISION: "Revisar seguimiento",
+        Finding.Status.SEGUIMIENTO_EN_REVISION: "Cerrar hallazgo",
     }
     return labels.get(finding.status, "")
 
@@ -1090,6 +1099,86 @@ def finding_create_success(request):
     return render(request, "findings/finding_success.html", {"finding_data": finding_data})
 
 
+EDITABLE_FINDING_FIELDS = (
+    "description",
+    "detection_date",
+    "source",
+    "source_other",
+    "area",
+    "process",
+    "process_other",
+    "objective_evidence",
+    "reported_by_name",
+    "reported_by_email",
+    "reported_by_position",
+)
+
+EDITABLE_FINDING_LABELS = {
+    "description": "Descripcion del hallazgo",
+    "detection_date": "Fecha de deteccion",
+    "source": "Fuente",
+    "source_other": "Otra fuente",
+    "area": "Area",
+    "process": "Proceso",
+    "process_other": "Otro proceso",
+    "objective_evidence": "Evidencia objetiva",
+    "reported_by_name": "Informado por",
+    "reported_by_email": "Correo del informante",
+    "reported_by_position": "Cargo",
+}
+
+
+def edit_history_value(field_name, value):
+    if value in (None, ""):
+        return "-"
+    if field_name == "source":
+        return dict(Finding.Source.choices).get(value, value)
+    if field_name == "detection_date":
+        return value.strftime("%d-%m-%Y")
+    return str(value)
+
+
+@role_required(is_administrator, "Solo el Administrador puede editar hallazgos.")
+def finding_edit(request, pk):
+    finding = get_object_or_404(Finding, pk=pk)
+    original_values = {field: getattr(finding, field) for field in EDITABLE_FINDING_FIELDS}
+
+    if request.method == "POST":
+        form = FindingEditForm(request.POST, instance=finding)
+        if form.is_valid():
+            if form.has_changed():
+                finding = form.save()
+                changes = []
+                for field_name in EDITABLE_FINDING_FIELDS:
+                    before = edit_history_value(field_name, original_values[field_name])
+                    after = edit_history_value(field_name, getattr(finding, field_name))
+                    if before != after:
+                        changes.append(f"{EDITABLE_FINDING_LABELS[field_name]}: {before} -> {after}")
+                if changes:
+                    record_history(
+                        finding,
+                        "Hallazgo editado",
+                        user=request.user,
+                        previous_status=finding.status,
+                        new_status=finding.status,
+                        comment="\n".join(changes),
+                    )
+                    messages.success(request, f"Hallazgo {finding.code} actualizado. El cambio quedo registrado en el historial.")
+                else:
+                    messages.info(request, "No se detectaron cambios en el hallazgo.")
+            else:
+                messages.info(request, "No se detectaron cambios en el hallazgo.")
+            return redirect("findings:detail", pk=finding.pk)
+    else:
+        form = FindingEditForm(instance=finding)
+
+    return render(
+        request,
+        "findings/finding_form.html",
+        {"form": form, "finding": finding, "is_edit": True},
+    )
+
+
 @role_required(can_view_findings)
 def finding_detail(request, pk):
     finding = get_object_or_404(Finding, pk=pk)
@@ -1654,7 +1743,7 @@ def submit_verification(request, pk):
         notify_representative(
             f"Revision pendiente: seguimiento {finding.code}",
             finding,
-            "Revisar el resultado del seguimiento y decidir si corresponde cierre o nuevo tratamiento.",
+            "Revisar el resultado del seguimiento y cerrar el hallazgo.",
             due_at=None,
             submitted_by=request.user if request.user.is_authenticated else None,
             request=request,
@@ -1670,41 +1759,21 @@ def review_verification(request, pk):
     if not ensure_action_available(request, finding, "review_verification"):
         return redirect("findings:detail", pk=finding.pk)
 
-    def get_instance(finding):
-        return get_object_or_404(EffectivenessVerification, finding=finding)
-
-    def on_valid(finding, form):
+    verification = get_object_or_404(EffectivenessVerification, finding=finding)
+    if request.method == "POST":
         previous = finding.status
-        verification = form.save(commit=False)
+        verification.is_effective = True
         verification.reviewed_by = request.user if request.user.is_authenticated else None
         verification.reviewed_at = timezone.now()
-        verification.save()
-        if form.cleaned_data.get("close_finding"):
-            finding.status = Finding.Status.CERRADO
-            finding.closed_at = timezone.now()
-            finding.verification_due_at = None
-            finding.verification_alert_24h_sent = False
-            finding.verification_overdue_alert_sent = False
-            finding.corrective_action_due_at = None
-            finding.corrective_action_alert_24h_sent = False
-            finding.corrective_action_overdue_alert_sent = False
-            history_label = "Verificacion eficaz y hallazgo cerrado"
-        else:
-            if verification.is_effective:
-                finding.status = Finding.Status.SEGUIMIENTO_EN_REVISION
-                history_label = "Verificacion eficaz pendiente de cierre"
-            else:
-                finding.status = Finding.Status.EN_ACCION_CORRECTIVA
-                finding.corrective_action_due_at = due_at_from_business_days(
-                    timezone.localdate(),
-                    DeadlineSetting.current().corrective_action_days,
-                )
-                finding.corrective_action_alert_24h_sent = False
-                finding.corrective_action_overdue_alert_sent = False
-                history_label = "Seguimiento no eficaz, accion devuelta"
-            finding.verification_due_at = None
-            finding.verification_alert_24h_sent = False
-            finding.verification_overdue_alert_sent = False
+        verification.save(update_fields=["is_effective", "reviewed_by", "reviewed_at", "updated_at"])
+        finding.status = Finding.Status.CERRADO
+        finding.closed_at = timezone.now()
+        finding.verification_due_at = None
+        finding.verification_alert_24h_sent = False
+        finding.verification_overdue_alert_sent = False
+        finding.corrective_action_due_at = None
+        finding.corrective_action_alert_24h_sent = False
+        finding.corrective_action_overdue_alert_sent = False
         finding.save(
             update_fields=[
                 "status",
@@ -1718,6 +1787,19 @@ def review_verification(request, pk):
                 "updated_at",
             ]
         )
-        record_history(finding, history_label, user=request.user if request.user.is_authenticated else None, previous_status=previous, new_status=finding.status, comment=verification.observations)
+        record_history(
+            finding,
+            "Hallazgo cerrado por el Representante de la Gerencia",
+            user=request.user if request.user.is_authenticated else None,
+            previous_status=previous,
+            new_status=finding.status,
+            comment="Seguimiento y verificacion de eficacia aprobados para cierre.",
+        )
+        messages.success(request, f"Hallazgo {finding.code} cerrado correctamente.")
+        return redirect("findings:detail", pk=finding.pk)
 
-    return transition_view(request, pk, "Revisar verificacion", VerificationReviewForm, get_instance, on_valid)
+    return render(
+        request,
+        "findings/finding_close_confirm.html",
+        {"finding": finding, "verification": verification},
+    )
